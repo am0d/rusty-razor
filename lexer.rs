@@ -1,136 +1,115 @@
-pub enum SectionType {
-    Html(~str),
-    Rust(~str),
-    Print(~str),
-    Comment(~str)
-}
+use std::str::Chars;
+use std::iter::Peekable;
 
-enum LexerState {
-    Text,
-    At,
-    Code
-}
+use token::{Token, String, Whitespace, Operator, AtSymbol};
 
-pub struct Lexer {
+pub struct Lexer<'a> {
     line: int,
     column: int,
-    state: LexerState,
-    sections: ~[SectionType]
+    source: &'a str,
+    chars: Peekable<char, Chars<'a>>,
+    peek: Option<Token>
 }
 
-impl Lexer {
-    pub fn new() -> Lexer {
+impl<'a> Lexer<'a> {
+    pub fn new(source: &'a str) -> Lexer<'a> {
         Lexer {
             line: 1,
-            column: 0,
-            state: Text,
-            sections: ~[]
+            column: 1,
+            source: source,
+            chars: source.chars().peekable(),
+            peek: None
         }
     }
 
-    pub fn lex(&mut self, source: &str) {
-        let mut seenWhitespace = false;
-        let mut braceCount = 0;
-        let mut text = ~"";
+    pub fn next(&mut self) -> Option<Token> {
+        match self.peek {
+            None => {
+                debug!("Using next_token() result");
+                self.next_token()
+            },
+            Some(_) => {
+                debug!("Using self.peek value");
+                let tmp = self.peek.clone();
+                self.peek = None;
+                tmp
+            }
+        }
+    }
 
-        for c in source.chars() {
-            self.column = self.column + 1;
-            match c {
-                '\n' => {
-                    self.line = self.line + 1;
-                    self.column = 0;
-                    seenWhitespace = true;
-                    text.push_char(c);
-                },
-                '@' => {
-                    match self.state {
-                        Text => {
-                            self.state = At;
-                            debug!("Switched to At");
-                        },
-                        At => {
-                            // output a single @ symbol
-                            text.push_char(c);
-                            self.state = Text;
-                            debug!("Switched to Text");
-                        },
-                        Code => {
-                            // output the code
-                            text.push_char(c);
-                        }
-                    }
-                },
-                '{' => {
-                    match self.state {
-                        Text => {
-                            text.push_char(c);
-                        },
-                        At => {
-                            text = self.push_section(Text, text);
-                            self.state = Code;
-                            braceCount = braceCount + 1;
-                            debug!("Switched to Code");
-                        },
-                        Code => {
-                            text.push_char(c);
-                            braceCount = braceCount + 1;
-                        }
-                    }
-                },
-                '}' => {
-                    match self.state {
-                        Text => {
-                            text.push_char(c);
-                        },
-                        At => {
-                            text.push_char(c);
-                        },
-                        Code => {
-                            braceCount = braceCount - 1;
-                            if (braceCount == 0) {
-                                text = self.push_section(Code, text);
-                                self.state = Text;
-                                seenWhitespace = false;
-                            } else {
-                                text.push_char(c);
-                            }
-                        }
-                    }
-                },
-                ' ' => {
-                    text.push_char(c);
-                    seenWhitespace = true;
-                },
-                '\t' => {
-                    text.push_char(c);
-                    seenWhitespace = true;
-                },
-                _ => {
-                    if (seenWhitespace) {
-                        text.push_char(c);
-                        seenWhitespace = false;
+    pub fn unpeek(&mut self, token: Option<Token>) {
+        self.peek = token.clone();
+    }
+
+    fn next_token(&mut self) -> Option<Token> {
+        let mut ret = ~"";
+        let mut token = None;
+        let mut advance = true;
+        
+        loop {
+            {
+                let p = self.chars.peek();
+                if p.is_none() {
+                    if ret.len() > 0 {
+                        return Some(String(ret));
                     } else {
-                        text.push_char(c);
+                        return None;
+                    }
+                }
+                let c = p.unwrap();
+                match *c {
+                      ' ' 
+                    | '\n' 
+                    | '\t' => {
+                        if ret.len() > 0 {
+                            token = Some(String(ret));
+                            advance = false;
+                        } else {
+                            if *c == '\n' {
+                                self.column = 0;
+                                self.line += 1;
+                            } else {
+                                self.column += 1;
+                            }
+                            token = Some(Whitespace(*c));
+                        }
+                        break;
+                    },
+                      '{' 
+                    | '}' 
+                    | '.'
+                    | ';' => {
+                        if ret.len() > 0 {
+                            token =  Some(String(ret));
+                            advance = false;
+                        } else {
+                            self.column += 1;
+                            token = Some(Operator(*c));
+                        }
+                        break;
+                    },
+                    '@' => {
+                        if ret.len() > 0 {
+                            token = Some(String(ret));
+                            advance = false
+                        } else {
+                            self.column += 1;
+                            token = Some(AtSymbol);
+                        }
+                        break;
+                    },
+                    c => {
+                        self.column += 1;
+                        ret.push_char(c);
                     }
                 }
             }
+            self.chars.next();
         }
 
-        self.push_section(self.state, text);
-    }
-
-    fn push_section(&mut self, state: LexerState, text: &str) -> ~str {
-        match state {
-            At => {
-                fail!("push_section called while in At state");
-            },
-            Code => {
-                self.sections.push(Rust(text.to_owned()));
-            },
-            Text => {
-                self.sections.push(Html(text.to_owned()));
-            }
+        if advance {
+            self.chars.next();
         }
-        ~""
+        token
     }
 }

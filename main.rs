@@ -2,6 +2,8 @@ use std::io;
 use std::io::File;
 
 mod lexer;
+mod parser;
+mod token;
 
 fn prelude () -> ~str {
     ~"extern mod extra;
@@ -10,34 +12,33 @@ extern mod http;
 use super::super::{View, SafeHtmlString};"
 }
 
-fn main() {
+fn get_file_contents() -> Result<~[u8], io::IoError> {
     let path = from_str::<Path>("src/compiler/index.rs.html").unwrap();
 
-    let file = io::result(|| {File::open(&path)});
-    let contents = match file {
-        Ok(mut reader) => {
-            reader.read_to_end()
-        }
-        Err(e) => {
-            fail!("Error reading file: {}", e.to_str())
-        }
+    let mut file = if_ok!(File::open(&path));
+    file.read_to_end()
+}
+
+fn main() {
+    let contents = match get_file_contents() {
+        Ok(contents) => std::str::from_utf8_owned(contents).expect("Non-utf8 source file"),
+        Err(e) => fail!(e)
     };
 
-    let contents = std::str::from_utf8_owned(contents);
+    let mut lexer = lexer::Lexer::new(contents);
+    let mut parser = parser::Parser::new(&mut lexer);
+    parser.parse();
 
-    let mut lexer = lexer::Lexer::new();
-    lexer.lex(contents);
+    println!("{}", prelude());
 
-    println(prelude());
+    println!("Lines: {}\nLast column: {}", parser.lexer.line, parser.lexer.column);
 
-    println!("Lines: {}\nLast column: {}", lexer.line, lexer.column);
-
-    for section in lexer.sections.iter() {
+    for section in parser.sections.iter() {
         match section {
-            &lexer::Html(ref s) => {
+            &parser::Html(ref s) => {
                 println!("Html({})", *s);
             },
-            &lexer::Rust(ref s) => {
+            &parser::Rust(ref s) => {
                 println!("Rust({})", *s);
             },
             _ => {}
