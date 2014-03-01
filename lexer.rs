@@ -25,11 +25,11 @@ impl<'a> Lexer<'a> {
     pub fn next(&mut self) -> Option<Token> {
         match self.peek {
             None => {
-                debug!("Using next_token() result");
+               // debug!("Using next_token() result");
                 self.next_token()
             },
             Some(_) => {
-                debug!("Using self.peek value");
+                //debug!("Using self.peek value");
                 let tmp = self.peek.clone();
                 self.peek = None;
                 tmp
@@ -43,7 +43,7 @@ impl<'a> Lexer<'a> {
 
     fn next_token(&mut self) -> Option<Token> {
         let mut ret = ~"";
-        let mut token = None;
+        let mut token: Option<Token>;
         let mut advance = true;
         
         loop {

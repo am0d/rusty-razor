@@ -1,11 +1,25 @@
+use std::fmt;
 use lexer;
-use token::{Token, String, Whitespace, Operator, AtSymbol};
+use token::{String, Whitespace, Operator, AtSymbol};
 
 pub enum SectionType {
     Html(~str),
     Rust(~str),
+    Directive(~str, ~str),
     Print(~str),
     Comment(~str)
+}
+
+impl fmt::Show for SectionType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Html(ref s) => write!(f.buf, "Html({})", *s),
+            Rust(ref s) => write!(f.buf, "Rust({})", *s),
+            Print(ref s) => write!(f.buf, "Print({})", *s),
+            Comment(ref s) => write!(f.buf, "Comment({})", *s),
+            Directive(ref s1, ref s2) => write!(f.buf, "Directive({}, {})", *s1, *s2)
+        }
+    }
 }
 
 enum ParserState {
@@ -33,7 +47,6 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_html(&mut self) -> ~[SectionType] {
-        let mut seenWhitespace = false;
         let mut text = ~"";
         let mut state = Text;
         let mut sections: ~[SectionType] = ~[];
@@ -50,6 +63,7 @@ impl<'a> Parser<'a> {
                             Some(AtSymbol) => {
                                 debug!("Found @@, switching to text");
                                 state = Text;
+                                text.push_str("@");
                                 continue;
                             },
                             _ => {}
@@ -71,34 +85,29 @@ impl<'a> Parser<'a> {
                     }
                     let token = token.unwrap();
 
-                    debug!("{}", token);
+                    //debug!("{}", token);
 
                     match token {
                         Whitespace(c) => {
-                            seenWhitespace = true;
                             text.push_char(c);
                         },
                         AtSymbol => {
                             match state {
                                 Text => {
                                     state = At;
-                                    debug!("({}, {}) Switched to At", self.lexer.line, self.lexer.column);
                                 },
                                 At => {
                                     // output a single @ symbol
                                     text.push_char('@');
                                     state = Text;
-                                    debug!("({}, {}) Switched to Text", self.lexer.line, self.lexer.column);
                                 }
                             }
                         },
                         String(s) => {
                             text.push_str(s);
-                            seenWhitespace = false;
                         },
                         Operator(s) => {
                             text.push_char(s);
-                            seenWhitespace = false;
                         }
                     }
                 }
@@ -112,49 +121,90 @@ impl<'a> Parser<'a> {
 
     fn parse_code(&mut self) -> ~[SectionType] {
         let mut code = ~"";
-        let mut braceCount = 0;
+        let mut brace_count = 0;
+        let mut include_last_token = true;
         let mut sections: ~[SectionType] = ~[];
-        let endToken: Token;
+        let mut is_directive = false;
+        let mut directive_name = ~"";
 
         let mut next_token = self.lexer.next();
-        match next_token {
+        let endToken = match next_token {
             None => {
                 return sections;
             },
             Some(String(~"model")) => {
-                endToken = Operator(';');
+                is_directive = true;
+                include_last_token = false;
+                Operator(';')
             },
             Some(String(~"use")) => {
-                endToken = Operator(';');
+                Operator(';')
+            },
+            Some(String(~"for")) => {
+                Operator('}')
+            },
+            Some(Operator('{')) => {
+                include_last_token = false;
+                Operator('}')
             },
             _ => {
-                endToken = Whitespace(' ');
+                Whitespace(' ')
             }
+        };
+
+        if is_directive {
+            directive_name = match next_token.unwrap() {
+                String(s) => s,
+                _ => fail!("BUG")
+            };
+            next_token = self.lexer.next();
         }
+
         loop {
             let c = next_token.unwrap();
 
             match c {
                 Operator('{') => {
-                    code.push_char('{');
-                    braceCount = braceCount + 1;
-                    debug!("Saw `\\{`, braceCount = {}", braceCount);
+                    if include_last_token || brace_count > 0 {
+                        code.push_char('{');
+                    }
+                    brace_count = brace_count + 1;
                 },
                 Operator('}') => {
-                    braceCount = braceCount - 1;
-                    debug!("Saw `\\}`, braceCount = {}", braceCount);
-                    code.push_char('}');
-                    if (braceCount == 0) && (endToken == Operator('}')) {
-                        debug!("Pushing section {}", code);
-                        sections.push(Rust(code));
+                    brace_count = brace_count - 1;
+                    if include_last_token || brace_count > 0 {
+                        code.push_char('}');
+                    }
+
+                    if (brace_count == 0) && (endToken == c) {
+                        let new_section = if is_directive {
+                            Directive(directive_name, code)
+                        } else {
+                            Rust(code)
+                        };
+                        sections.push(new_section);
                         return sections;
+                    }
+                },
+                Operator(op) => {
+                    if c == endToken {
+                        if include_last_token {
+                            code.push_char(op);
+                        }
+
+                        let new_section = if is_directive {
+                            Directive(directive_name, code)
+                        } else {
+                            Rust(code)
+                        };
+                        sections.push(new_section);
+                        return sections;
+                    } else {
+                        code.push_char(op);
                     }
                 },
                 String(s) => {
                     code.push_str(s);
-                },
-                Operator(c) => {
-                    code.push_char(c);
                 },
                 Whitespace(c) => {
                     code.push_char(c);

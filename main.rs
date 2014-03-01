@@ -4,13 +4,7 @@ use std::io::File;
 mod lexer;
 mod parser;
 mod token;
-
-fn prelude () -> ~str {
-    ~"extern mod extra;
-extern mod http;
-
-use super::super::{View, SafeHtmlString};"
-}
+mod view_writer;
 
 fn get_file_contents() -> Result<~[u8], io::IoError> {
     let path = from_str::<Path>("src/compiler/index.rs.html").unwrap();
@@ -31,19 +25,9 @@ fn main() {
     let mut parser = parser::Parser::new(&mut lexer);
     parser.parse();
 
-    println!("{}", prelude());
-
     println!("Lines: {}\nLast column: {}", parser.lexer.line, parser.lexer.column);
 
-    for section in parser.sections.iter() {
-        match section {
-            &parser::Html(ref s) => {
-                println!("Html({})", *s);
-            },
-            &parser::Rust(ref s) => {
-                println!("Rust({})", *s);
-            },
-            _ => {}
-        }
-    }
+    //debug!("{}", parser.sections);
+
+    view_writer::write_view(&Path::new("src/compiler/index.rs"), parser.sections.as_slice());
 }
