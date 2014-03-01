@@ -15,8 +15,10 @@ use super::super::{View, SafeHtmlString};"
 fn get_file_contents() -> Result<~[u8], io::IoError> {
     let path = from_str::<Path>("src/compiler/index.rs.html").unwrap();
 
-    let mut file = if_ok!(File::open(&path));
-    file.read_to_end()
+    File::open(&path).and_then(|file| {
+        let mut file = file;
+        file.read_to_end()
+    })
 }
 
 fn main() {
