@@ -61,7 +61,6 @@ impl<'a> Parser<'a> {
                                 break;
                             },
                             Some(AtSymbol) => {
-                                debug!("Found @@, switching to text");
                                 state = Text;
                                 text.push_str("@");
                                 continue;
@@ -84,8 +83,6 @@ impl<'a> Parser<'a> {
                         break;
                     }
                     let token = token.unwrap();
-
-                    //debug!("{}", token);
 
                     match token {
                         Whitespace(c) => {
@@ -132,16 +129,21 @@ impl<'a> Parser<'a> {
             None => {
                 return sections;
             },
-            Some(String(~"model")) => {
-                is_directive = true;
-                include_last_token = false;
-                Operator(';')
-            },
-            Some(String(~"use")) => {
-                Operator(';')
-            },
-            Some(String(~"for")) => {
-                Operator('}')
+            Some(String(ref s)) => {
+                match s.as_slice() {
+                    "model" => {
+                        is_directive = true;
+                        include_last_token = false;
+                        Operator(';')
+                    },
+                    "use" => {
+                        Operator(';')
+                    },
+                    "for" => {
+                        Operator('}')
+                    },
+                    _ => Whitespace(' ')
+                }
             },
             Some(Operator('{')) => {
                 include_last_token = false;
