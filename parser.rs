@@ -28,8 +28,8 @@ enum ParserState {
 }
 
 pub struct Parser<'a> {
-    sections: ~[SectionType],
-    lexer: &'a mut lexer::Lexer<'a>
+    pub sections: ~[SectionType],
+    pub lexer: &'a mut lexer::Lexer<'a>
 }
 
 impl<'a> Parser<'a> {

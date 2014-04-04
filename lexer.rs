@@ -4,11 +4,11 @@ use std::iter::Peekable;
 use token::{Token, String, Whitespace, Operator, AtSymbol};
 
 pub struct Lexer<'a> {
-    line: int,
-    column: int,
-    source: &'a str,
-    chars: Peekable<char, Chars<'a>>,
-    peek: Option<Token>
+    pub line: int,
+    pub column: int,
+    pub source: &'a str,
+    pub chars: Peekable<char, Chars<'a>>,
+    pub peek: Option<Token>
 }
 
 impl<'a> Lexer<'a> {
