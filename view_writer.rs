@@ -14,7 +14,7 @@ pub fn write_view(out_path: &Path, sections: &[parser::SectionType]) {
                         if !in_render {
                             try!(writeln!(&mut file, "{}", prelude(model)));
                         }
-                        try!(writeln!(&mut file, "        print(&SafeHtmlString::new(r\\#\\#\\#\"{}\"\\#\\#\\#));", *s));
+                        try!(writeln!(&mut file, "        out.write_string(r\\#\\#\\#\"{}\"\\#\\#\\#);", *s));
                         in_render = true;
                     }
                 },
@@ -60,7 +60,7 @@ impl<'a> TodoIndexView<'a> \\{
 \\}
 
 impl<'a> Action for TodoIndexView<'a> \\{
-    fn render(&self, print: |&SafeHtmlString| -> ()) \\{", model)
+    fn render(&self, out: &mut Writer) \\{", model)
 }
 
 fn postlude() -> ~str {

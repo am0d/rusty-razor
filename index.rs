@@ -18,8 +18,8 @@ impl<'a> TodoIndexView<'a> {
 }
 
 impl<'a> Action for TodoIndexView<'a> {
-    fn render(&self, print: |&SafeHtmlString| -> ()) {
-        print(&SafeHtmlString::new(r###"
+    fn render(&self, out: &mut Writer) {
+        out.write_string(r###"
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -79,11 +79,11 @@ impl<'a> Action for TodoIndexView<'a> {
         </p>
 
         <ul>
-            "###));
+            "###);
 for t in todos.iter() {
             <li><a href="todos/@t.id/edit">@t.description</a></li>
             }
-        print(&SafeHtmlString::new(r###"
+        out.write_string(r###"
         </ul>
       </div>
 
@@ -97,6 +97,6 @@ for t in todos.iter() {
     <script src="/assets/js/bootstrap.min.js"></script>
   </body>
 </html>
-"###));
+"###);
     }
 }
