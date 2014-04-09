@@ -6,18 +6,18 @@ mod parser;
 mod token;
 mod view_writer;
 
-fn get_file_contents() -> Result<~[u8], io::IoError> {
+fn get_file_contents() -> Result<~str, io::IoError> {
     let path = from_str::<Path>("src/compiler/index.rs.html").unwrap();
 
     File::open(&path).and_then(|file| {
         let mut file = file;
-        file.read_to_end()
+        file.read_to_str()
     })
 }
 
 fn main() {
     let contents = match get_file_contents() {
-        Ok(contents) => std::str::from_utf8_owned(contents).expect("Non-utf8 source file"),
+        Ok(contents) => contents,
         Err(e) => fail!(e)
     };
 
