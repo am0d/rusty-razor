@@ -62,7 +62,7 @@ use super::super::models::Todo;
 
         <ul>
             @for t in todos.iter() {
-            <li><a href="todos/@t.id/edit">@t.description</a></li>
+            <li><a href="todos/@(t.id)/edit">@(t.description)</a></li>
             }
         </ul>
       </div>

@@ -1,3 +1,5 @@
+extern crate collections;
+
 use std::io;
 use std::io::File;
 
@@ -29,5 +31,5 @@ fn main() {
 
     //debug!("{}", parser.sections);
 
-    view_writer::write_view(&Path::new("src/compiler/index.rs"), parser.sections.as_slice());
+    view_writer::write_view(&Path::new("src/compiler/index.rs"), &parser.sections);
 }

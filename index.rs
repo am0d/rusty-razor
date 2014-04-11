@@ -81,7 +81,7 @@ impl<'a> Action for TodoIndexView<'a> {
         <ul>
             "###);
 for t in todos.iter() {
-            <li><a href="todos/@t.id/edit">@t.description</a></li>
+            <li><a href="todos/@(t.id)/edit">@(t.description)</a></li>
             }
         out.write_string(r###"
         </ul>

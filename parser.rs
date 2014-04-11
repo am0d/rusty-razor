@@ -1,4 +1,7 @@
 use std::fmt;
+use collections::deque::Deque;
+use collections::dlist::DList;
+
 use lexer;
 use token::{String, Whitespace, Operator, AtSymbol};
 
@@ -28,14 +31,14 @@ enum ParserState {
 }
 
 pub struct Parser<'a> {
-    pub sections: ~[SectionType],
+    pub sections: DList<SectionType>,
     pub lexer: &'a mut lexer::Lexer<'a>
 }
 
 impl<'a> Parser<'a> {
     pub fn new(lexer: &'a mut lexer::Lexer<'a>) -> Parser<'a> {
         Parser {
-            sections: ~[],
+            sections: DList::new(),
             lexer: lexer
         }
     }
@@ -43,13 +46,13 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) {
         let sections = self.parse_html();
 
-        self.sections = sections; 
+        self.sections = sections;
     }
 
-    pub fn parse_html(&mut self) -> ~[SectionType] {
+    pub fn parse_html(&mut self) -> DList<SectionType> {
         let mut text = ~"";
         let mut state = Text;
-        let mut sections: ~[SectionType] = ~[];
+        let mut sections = DList::new();
 
         loop {
             match state {
@@ -70,11 +73,11 @@ impl<'a> Parser<'a> {
 
                         self.lexer.unpeek(c);
                     }
-                    sections.push(Html(text));
+                    sections.push_back(Html(text));
                     text = ~"";
 
                     let code = self.parse_code();
-                    sections.push_all_move(code);
+                    sections.append(code);
                     state = Text;
                 },
                 Text => {
@@ -111,16 +114,16 @@ impl<'a> Parser<'a> {
             }
         }
 
-        sections.push(Html(text));
+        sections.push_back(Html(text));
         sections
     }
 
 
-    fn parse_code(&mut self) -> ~[SectionType] {
+    fn parse_code(&mut self) -> DList<SectionType> {
         let mut code = ~"";
         let mut brace_count = 0;
         let mut include_last_token = true;
-        let mut sections: ~[SectionType] = ~[];
+        let mut sections = DList::new();
         let mut is_directive = false;
         let mut directive_name = ~"";
 
@@ -171,6 +174,7 @@ impl<'a> Parser<'a> {
                         code.push_char('{');
                     }
                     brace_count = brace_count + 1;
+                    
                 },
                 Operator('}') => {
                     brace_count = brace_count - 1;
@@ -184,7 +188,7 @@ impl<'a> Parser<'a> {
                         } else {
                             Rust(code)
                         };
-                        sections.push(new_section);
+                        sections.push_back(new_section);
                         return sections;
                     }
                 },
@@ -199,7 +203,7 @@ impl<'a> Parser<'a> {
                         } else {
                             Rust(code)
                         };
-                        sections.push(new_section);
+                        sections.push_back(new_section);
                         return sections;
                     } else {
                         code.push_char(op);

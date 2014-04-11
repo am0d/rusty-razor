@@ -1,7 +1,8 @@
 use std::io::File;
+use collections::dlist::DList;
 use parser;
 
-pub fn write_view(out_path: &Path, sections: &[parser::SectionType]) {
+pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
