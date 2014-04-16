@@ -2,7 +2,7 @@ use std::fmt;
 
 #[deriving(Clone)]
 pub enum Token {
-    String(~str),
+    String(StrBuf),
     Whitespace(char),
     Operator(char),
     AtSymbol

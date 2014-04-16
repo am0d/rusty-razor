@@ -6,21 +6,21 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
-        let mut model = ~"";
+        let mut model = StrBuf::new();
 
         for section in sections.iter() {
             match section {
                 &parser::Html(ref s) => {
-                    if in_render || s.trim().len() > 0 {
+                    if in_render || s.as_slice().trim().len() > 0 {
                         if !in_render {
-                            try!(writeln!(&mut file, "{}", prelude(model)));
+                            try!(writeln!(&mut file, "{}", prelude(&model)));
                         }
                         try!(writeln!(&mut file, "        out.write_string(r\\#\\#\\#\"{}\"\\#\\#\\#);", *s));
                         in_render = true;
                     }
                 },
                 &parser::Rust(ref s) => {
-                    try!(writeln!(&mut file, "{}", *s));
+                    try!(writeln!(&mut file, "        {}", *s));
                 },
                 &parser::Directive(ref directive_name, ref directive_value) => {
                     match directive_name.as_slice() {
@@ -43,7 +43,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     }
 }
 
-fn prelude (model: &str) -> ~str {
+fn prelude (model: &StrBuf) -> ~str {
     format!("extern crate extra;
 extern crate http;
 
@@ -61,7 +61,7 @@ impl<'a> TodoIndexView<'a> \\{
 \\}
 
 impl<'a> Action for TodoIndexView<'a> \\{
-    fn render(&self, out: &mut Writer) \\{", model)
+    fn render(&self, out: &mut Writer) \\{", model.as_slice())
 }
 
 fn postlude() -> ~str {

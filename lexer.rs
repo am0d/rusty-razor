@@ -42,7 +42,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn next_token(&mut self) -> Option<Token> {
-        let mut ret = ~"";
+        let mut ret = StrBuf::new();
         let mut token: Option<Token>;
         let mut advance = true;
         

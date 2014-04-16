@@ -1,4 +1,4 @@
-
+        
 use super::super::models::Todo;
 
 extern crate extra;
@@ -80,7 +80,7 @@ impl<'a> Action for TodoIndexView<'a> {
 
         <ul>
             "###);
-for t in todos.iter() {
+        for t in todos.iter() {
             <li><a href="todos/@(t.id)/edit">@(t.description)</a></li>
             }
         out.write_string(r###"

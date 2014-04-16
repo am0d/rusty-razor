@@ -6,11 +6,11 @@ use lexer;
 use token::{String, Whitespace, Operator, AtSymbol};
 
 pub enum SectionType {
-    Html(~str),
-    Rust(~str),
-    Directive(~str, ~str),
-    Print(~str),
-    Comment(~str)
+    Html(StrBuf),
+    Rust(StrBuf),
+    Directive(StrBuf, StrBuf),
+    Print(StrBuf),
+    Comment(StrBuf)
 }
 
 impl fmt::Show for SectionType {
@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_html(&mut self) -> DList<SectionType> {
-        let mut text = ~"";
+        let mut text = StrBuf::new();
         let mut state = Text;
         let mut sections = DList::new();
 
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
                             },
                             Some(AtSymbol) => {
                                 state = Text;
-                                text.push_str("@");
+                                text.push_char('@');
                                 continue;
                             },
                             _ => {}
@@ -74,7 +74,7 @@ impl<'a> Parser<'a> {
                         self.lexer.unpeek(c);
                     }
                     sections.push_back(Html(text));
-                    text = ~"";
+                    text = StrBuf::new();
 
                     let code = self.parse_code();
                     sections.append(code);
@@ -104,7 +104,7 @@ impl<'a> Parser<'a> {
                             }
                         },
                         String(s) => {
-                            text.push_str(s);
+                            text.push_str(s.as_slice());
                         },
                         Operator(s) => {
                             text.push_char(s);
@@ -120,12 +120,12 @@ impl<'a> Parser<'a> {
 
 
     fn parse_code(&mut self) -> DList<SectionType> {
-        let mut code = ~"";
+        let mut code = StrBuf::new();
         let mut brace_count = 0;
         let mut include_last_token = true;
         let mut sections = DList::new();
         let mut is_directive = false;
-        let mut directive_name = ~"";
+        let mut directive_name = StrBuf::new();
 
         let mut next_token = self.lexer.next();
         let endToken = match next_token {
@@ -210,7 +210,7 @@ impl<'a> Parser<'a> {
                     }
                 },
                 String(s) => {
-                    code.push_str(s);
+                    code.push_str(s.as_slice());
                 },
                 Whitespace(c) => {
                     code.push_char(c);
