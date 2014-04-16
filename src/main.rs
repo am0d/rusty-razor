@@ -9,7 +9,7 @@ mod token;
 mod view_writer;
 
 fn get_file_contents() -> Result<~str, io::IoError> {
-    let path = from_str::<Path>("src/compiler/index.rs.html").unwrap();
+    let path = from_str::<Path>("test/index.rs.html").unwrap();
 
     File::open(&path).and_then(|file| {
         let mut file = file;
@@ -20,7 +20,7 @@ fn get_file_contents() -> Result<~str, io::IoError> {
 fn main() {
     let contents = match get_file_contents() {
         Ok(contents) => contents,
-        Err(e) => fail!(e)
+        Err(e) => fail!(e.to_str())
     };
 
     let mut lexer = lexer::Lexer::new(contents);
@@ -31,5 +31,5 @@ fn main() {
 
     //debug!("{}", parser.sections);
 
-    view_writer::write_view(&Path::new("src/compiler/index.rs"), &parser.sections);
+    view_writer::write_view(&Path::new("test/index.rs"), &parser.sections);
 }
