@@ -17,15 +17,41 @@ impl<'a> CodeLexer<'a> {
         }
     }
 
+    pub fn is_keyword(&self, identifier: &str) -> bool {
+        match identifier {
+            "if" |
+            "for" |
+            "model" |
+            "while" => true,
+            _ => false
+        }
+    }
+
+    pub fn accept_identifier(&self, source: &str) -> StrBuf {
+        let mut first = true;
+        source.chars().take_while(|c| {
+            match *c {
+                'A' .. 'Z' |
+                'a' .. 'z' |
+                '_' => {
+                    first = false;
+                    true
+                },
+                '0' .. '9' if !first => true,
+                _ => false
+            }
+        }).collect::<StrBuf>()
+    }
+
     fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
         let mut scope = 0;
-        let mut in_quote = None;
+        let mut in_quote: Option<char> = None;
         for (index, c) in self.source.chars().enumerate() {
             if c == '\'' || c == '"' {
-                match in_quote {
-                    None => in_quote = Some(c),
-                    Some(q) if q == c => in_quote = None,
-                    _ => ()
+                in_quote = match in_quote {
+                    None => Some(c),
+                    Some(q) if q == c => None,
+                    _ => in_quote
                 };
             }
 
@@ -49,12 +75,9 @@ impl<'a> CodeLexer<'a> {
     }
 
     pub fn next_instance_of(&self, search_char: char) -> Option<uint> {
-        for (index, c) in self.source.chars().enumerate() {
-            if c == search_char {
-                return Some(index);
-            }
-        }
-        None
+        self.source.chars().position(|c| {
+            c == search_char
+        })
     }
 
     pub fn end_of_code_block(&self) -> Option<uint> {
