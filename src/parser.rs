@@ -3,11 +3,11 @@ use collections::deque::Deque;
 use collections::dlist::DList;
 
 use lexer;
-use token::{String, Whitespace, Operator, AtSymbol};
+//use token::{String, Whitespace, Operator, AtSymbol};
 
 pub enum SectionType {
     Html(StrBuf),
-    Rust(StrBuf),
+    Code(StrBuf),
     Directive(StrBuf, StrBuf),
     Print(StrBuf),
     Comment(StrBuf)
@@ -17,7 +17,7 @@ impl fmt::Show for SectionType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Html(ref s) => write!(f.buf, "Html({})", *s),
-            Rust(ref s) => write!(f.buf, "Rust({})", *s),
+            Code(ref s) => write!(f.buf, "Code({})", *s),
             Print(ref s) => write!(f.buf, "Print({})", *s),
             Comment(ref s) => write!(f.buf, "Comment({})", *s),
             Directive(ref s1, ref s2) => write!(f.buf, "Directive({}, {})", *s1, *s2)
@@ -32,198 +32,92 @@ enum ParserState {
 
 pub struct Parser<'a> {
     pub sections: DList<SectionType>,
-    pub lexer: &'a mut lexer::Lexer<'a>
+    source: &'a str
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut lexer::Lexer<'a>) -> Parser<'a> {
+    pub fn new(source: &'a str) -> Parser<'a> {
         Parser {
             sections: DList::new(),
-            lexer: lexer
+            source: source
         }
     }
 
     pub fn parse(&mut self) {
-        let sections = self.parse_html();
+        let sections = self.parse_html(self.source, 1, 1);
 
         self.sections = sections;
     }
 
-    pub fn parse_html(&mut self) -> DList<SectionType> {
-        let mut text = StrBuf::new();
-        let mut state = Text;
+    pub fn parse_html(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
         let mut sections = DList::new();
+        let mut lexer = lexer::HtmlLexer::new(source, line, column);
 
-        loop {
-            match state {
-                At => {
-                    {
-                        let c = self.lexer.next();
-                        match c {
-                            None => {
-                                break;
-                            },
-                            Some(AtSymbol) => {
-                                state = Text;
-                                text.push_char('@');
-                                continue;
-                            },
-                            _ => {}
-                        }
+        match lexer.next_transition() {
+            Some(index) => {
+                sections.push_back(Html(source.slice_to(index).to_strbuf()));
 
-                        self.lexer.unpeek(c);
-                    }
-                    sections.push_back(Html(text));
-                    text = StrBuf::new();
-
-                    let code = self.parse_code();
-                    sections.append(code);
-                    state = Text;
-                },
-                Text => {
-                    let token = self.lexer.next();
-                    if token.is_none() {
-                        break;
-                    }
-                    let token = token.unwrap();
-
-                    match token {
-                        Whitespace(c) => {
-                            text.push_char(c);
-                        },
-                        AtSymbol => {
-                            match state {
-                                Text => {
-                                    state = At;
-                                },
-                                At => {
-                                    // output a single @ symbol
-                                    text.push_char('@');
-                                    state = Text;
-                                }
-                            }
-                        },
-                        String(s) => {
-                            text.push_str(s.as_slice());
-                        },
-                        Operator(s) => {
-                            text.push_char(s);
-                        }
-                    }
+                if index < source.len() {
+                    sections.append(self.parse_code(source.slice_from(index), 1, 1));
                 }
+            },
+            None => {
+                sections.push_back(Html(source.to_strbuf()));
             }
-        }
+        };
 
-        sections.push_back(Html(text));
         sections
     }
 
 
-    fn parse_code(&mut self) -> DList<SectionType> {
-        let mut code = StrBuf::new();
-        let mut brace_count = 0;
-        let mut include_last_token = true;
-        let mut sections = DList::new();
-        let mut is_directive = false;
-        let mut directive_name = StrBuf::new();
+    fn parse_code(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
+        //let mut lexer = lexer::CodeLexer::new(source, line, column);
 
-        let mut next_token = self.lexer.next();
-        let endToken = match next_token {
-            None => {
-                return sections;
-            },
-            Some(String(ref s)) => {
-                match s.as_slice() {
-                    "model" => {
-                        is_directive = true;
-                        include_last_token = false;
-                        Operator(';')
-                    },
-                    "use" => {
-                        Operator(';')
-                    },
-                    "for" => {
-                        Operator('}')
-                    },
-                    _ => Whitespace(' ')
-                }
-            },
-            Some(Operator('{')) => {
-                include_last_token = false;
-                Operator('}')
-            },
+        if source.len() < 2 {
+            return sections;
+        }
+
+        let first = source.char_at(0);
+        match first {
+            '@' => (),
+            _ => return self.parse_html(source, line, column)
+        };
+
+        let next = source.char_at(1);
+        match next {
+            '{' => self.parse_code_block(source, line, column),
             _ => {
-                Whitespace(' ')
+                self.parse_expression_block(source, line, column)
+            }
+        }
+    }
+
+    fn parse_code_block(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
+        let lexer = lexer::CodeLexer::new(source, line, column);
+
+        match lexer.end_of_code_block() {
+            None => fail!("Unterminated code block"),
+            Some(index) => {
+                sections.push_back(Code(source.slice_to(index).to_strbuf()));
+                
+                if index < source.len() {
+                    sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
+                }
             }
         };
 
-        if is_directive {
-            directive_name = match next_token.unwrap() {
-                String(s) => s,
-                _ => fail!("BUG")
-            };
-            next_token = self.lexer.next();
-        }
+        sections
+    }
 
-        loop {
-            let c = next_token.unwrap();
+    fn parse_expression_block(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
+        let lexer = lexer::CodeLexer::new(source, line, column);
 
-            match c {
-                Operator('{') => {
-                    if include_last_token || brace_count > 0 {
-                        code.push_char('{');
-                    }
-                    brace_count = brace_count + 1;
-                    
-                },
-                Operator('}') => {
-                    brace_count = brace_count - 1;
-                    if include_last_token || brace_count > 0 {
-                        code.push_char('}');
-                    }
+        let next_brace = lexer.next_instance_of('{');
+        let next_parenthese = lexer.next_instance_of('(');
 
-                    if (brace_count == 0) && (endToken == c) {
-                        let new_section = if is_directive {
-                            Directive(directive_name, code)
-                        } else {
-                            Rust(code)
-                        };
-                        sections.push_back(new_section);
-                        return sections;
-                    }
-                },
-                Operator(op) => {
-                    if c == endToken {
-                        if include_last_token {
-                            code.push_char(op);
-                        }
-
-                        let new_section = if is_directive {
-                            Directive(directive_name, code)
-                        } else {
-                            Rust(code)
-                        };
-                        sections.push_back(new_section);
-                        return sections;
-                    } else {
-                        code.push_char(op);
-                    }
-                },
-                String(s) => {
-                    code.push_str(s.as_slice());
-                },
-                Whitespace(c) => {
-                    code.push_char(c);
-                },
-                AtSymbol => {
-                    code.push_char('@');
-                }
-            }
-            next_token = self.lexer.next();
-            if next_token.is_none() {
-                break;
-            }
-        }
         sections
     }
 }

@@ -23,13 +23,12 @@ fn main() {
         Err(e) => fail!(e.to_str())
     };
 
-    let mut lexer = lexer::Lexer::new(contents);
-    let mut parser = parser::Parser::new(&mut lexer);
+    let mut parser = parser::Parser::new(contents.as_slice());
     parser.parse();
 
-    println!("Lines: {}\nLast column: {}", parser.lexer.line, parser.lexer.column);
-
-    //debug!("{}", parser.sections);
+    for section in parser.sections.iter() {
+        println!("{}", section);
+    }
 
     view_writer::write_view(&Path::new("test/index.rs"), &parser.sections);
 }

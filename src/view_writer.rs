@@ -19,7 +19,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
                         in_render = true;
                     }
                 },
-                &parser::Rust(ref s) => {
+                &parser::Code(ref s) => {
                     try!(writeln!(&mut file, "        {}", *s));
                 },
                 &parser::Directive(ref directive_name, ref directive_value) => {
