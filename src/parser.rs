@@ -1,28 +1,16 @@
-use std::fmt;
 use collections::deque::Deque;
 use collections::dlist::DList;
 
-use lexer;
+use lexer::{HtmlLexer, CodeLexer};
 //use token::{String, Whitespace, Operator, AtSymbol};
 
+#[deriving(Show)]
 pub enum SectionType {
     Html(StrBuf),
     Code(StrBuf),
     Directive(StrBuf, StrBuf),
     Print(StrBuf),
     Comment(StrBuf)
-}
-
-impl fmt::Show for SectionType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Html(ref s) => write!(f.buf, "Html({})", *s),
-            Code(ref s) => write!(f.buf, "Code({})", *s),
-            Print(ref s) => write!(f.buf, "Print({})", *s),
-            Comment(ref s) => write!(f.buf, "Comment({})", *s),
-            Directive(ref s1, ref s2) => write!(f.buf, "Directive({}, {})", *s1, *s2)
-        }
-    }
 }
 
 pub struct Parser<'a> {
@@ -46,11 +34,13 @@ impl<'a> Parser<'a> {
 
     pub fn parse_html(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
         let mut sections = DList::new();
-        let mut lexer = lexer::HtmlLexer::new(source, line, column);
+        let mut lexer = HtmlLexer::new(source, line, column);
 
         match lexer.next_transition() {
             Some(index) => {
-                sections.push_back(Html(source.slice_to(index).to_strbuf()));
+                if index > 0 {
+                    sections.push_back(Html(source.slice_to(index).to_strbuf()));
+                }
 
                 if index < source.len() {
                     sections.append(self.parse_code(source.slice_from(index), 1, 1));
@@ -67,7 +57,7 @@ impl<'a> Parser<'a> {
 
     fn parse_code(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
         let sections: DList<SectionType> = DList::new();
-        //let mut lexer = lexer::CodeLexer::new(source, line, column);
+        //let mut lexer = CodeLexer::new(source, line, column);
 
         if source.len() < 2 {
             return sections;
@@ -90,7 +80,7 @@ impl<'a> Parser<'a> {
 
     fn parse_code_block(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
         let mut sections: DList<SectionType> = DList::new();
-        let lexer = lexer::CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source, line, column);
 
         match lexer.end_of_code_block() {
             None => fail!("Unterminated code block"),
@@ -109,7 +99,7 @@ impl<'a> Parser<'a> {
 
     fn parse_expression_block(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         //let mut sections: DList<SectionType> = DList::new();
-        let lexer = lexer::CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source, line, column);
 
         let next_brace = lexer.next_instance_of('{');
         let next_parenthese = lexer.next_instance_of('(');
@@ -138,14 +128,14 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         let sections: DList<SectionType> = DList::new();
-        let lexer = lexer::CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source, line, column);
 
         sections
     }
 
     fn parse_keyword(&self, identifier: &str, source: &str, line: int, column: int) -> DList<SectionType> {
         //let sections: DList<SectionType> = DList::new();
-        //let lexer = lexer::CodeLexer::new(source, line, column);
+        //let lexer = CodeLexer::new(source, line, column);
 
         match identifier {
             "model" => {
@@ -163,7 +153,7 @@ impl<'a> Parser<'a> {
 
     fn parse_model(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         let mut sections: DList<SectionType> = DList::new();
-        let lexer = lexer::CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source, line, column);
 
         match lexer.end_of_code_statement() {
             Some(index) => {
@@ -181,7 +171,7 @@ impl<'a> Parser<'a> {
 
     fn parse_simple_block(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         let mut sections: DList<SectionType> = DList::new();
-        let lexer = lexer::CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source, line, column);
 
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
