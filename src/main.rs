@@ -1,3 +1,7 @@
+#![feature(phase)]
+#[phase(syntax)]
+extern crate debug;
+
 extern crate collections;
 
 use std::io;

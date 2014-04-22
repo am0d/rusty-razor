@@ -146,6 +146,7 @@ impl<'a> Parser<'a> {
                 self.parse_simple_block(source, line, column)
             },
             _ => {
+                dump!(identifier);
                 self.parse_html(source, line, column)
             }
         }
