@@ -83,6 +83,14 @@ impl<'a> CodeLexer<'a> {
     pub fn end_of_code_block(&self) -> Option<uint> {
         self.end_of_block('{', '}')
     }
+
+    pub fn end_of_code_statement(&self) -> Option<uint> {
+        self.next_instance_of(';')
+    }
+
+    pub fn block_delimiters(&self) -> (Option<uint>, Option<uint>) {
+        (self.next_instance_of('{'), self.end_of_block('{', '}'))
+    }
 }
 
 pub struct HtmlLexer<'a> {

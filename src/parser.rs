@@ -95,7 +95,8 @@ impl<'a> Parser<'a> {
         match lexer.end_of_code_block() {
             None => fail!("Unterminated code block"),
             Some(index) => {
-                sections.push_back(Code(source.slice_to(index).to_strbuf()));
+                // skip the @{ by starting the slice at 2
+                sections.push_back(Code(source.slice_chars(2, index).to_strbuf()));
                 
                 if index < source.len() {
                     sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
@@ -143,9 +144,62 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_keyword(&self, identifier: &str, source: &str, line: int, column: int) -> DList<SectionType> {
-        let sections: DList<SectionType> = DList::new();
+        //let sections: DList<SectionType> = DList::new();
+        //let lexer = lexer::CodeLexer::new(source, line, column);
+
+        match identifier {
+            "model" => {
+                self.parse_model(source.slice_from(identifier.len()), line, column)
+            },
+            "for" |
+            "while" => {
+                self.parse_simple_block(source, line, column)
+            },
+            _ => {
+                self.parse_html(source, line, column)
+            }
+        }
+    }
+
+    fn parse_model(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
         let lexer = lexer::CodeLexer::new(source, line, column);
 
-        sections
+        match lexer.end_of_code_statement() {
+            Some(index) => {
+                // don't include the `;`
+                sections.push_back(Directive(StrBuf::from_str("model"), source.slice_to(index).to_strbuf()));
+                // now skip the `;`
+                sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
+                return sections
+            },
+            None => {
+                fail!("Unable to find end of `model` directive at {}:{}", line, column)
+            }
+        };
+    }
+
+    fn parse_simple_block(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
+        let lexer = lexer::CodeLexer::new(source, line, column);
+
+        match lexer.block_delimiters() {
+            (Some(start), Some(end)) => {
+                sections.push_back(Code(source.slice_to(start + 1).to_strbuf()));
+                sections.append(self.parse_html(source.slice_chars(start+1, end), 1, 1));
+                sections.push_back(Code("}".to_strbuf()));
+                sections.append(self.parse_html(source.slice_from(end+1), 1, 1));
+                sections
+            },
+            (Some(_), None) => {
+                fail!("Missing end `\\}` for code block beginning at {}:{}", line, column);
+            },
+            (None, Some(_)) => {
+                fail!("Missing start `\\{` for code block beginning at {}:{}", line, column);
+            },
+            (None, None) => {
+                fail!("Unable to find start `\\{` and end `\\}` for code block beginning at {}:{}", line, column);
+            }
+        }
     }
 }

@@ -44,9 +44,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
 }
 
 fn prelude (model: &StrBuf) -> ~str {
-    format!("extern crate extra;
-extern crate http;
-
+    format!("
 use super::super::\\{View, SafeHtmlString\\};
 pub struct TodoIndexView<'a> \\{
     model: {0}

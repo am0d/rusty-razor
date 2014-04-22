@@ -1,4 +1,4 @@
-@model ~[Todo];
+@model Vec<Todo>;
 @{
 use super::super::models::Todo;
 }
@@ -57,12 +57,12 @@ use super::super::models::Todo;
         </p>
         <span>What happens when I put @@LastName here?</span>
         <p>
-            My contact: test@@example.com
+            My contact: test@example.com
         </p>
 
         <ul>
             @for t in todos.iter() {
-            <li><a href="todos/@(t.id)/edit">@(t.description)</a></li>
+            <li><a href="todos/@t.id/edit">@t.description</a></li>
             }
         </ul>
       </div>
