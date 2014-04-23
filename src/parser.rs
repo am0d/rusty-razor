@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
         let sections: DList<SectionType> = DList::new();
         let lexer = CodeLexer::new(source, line, column);
 
-        sections
+        self.read_expression(source.slice_from(1), line, column)
     }
 
     fn parse_keyword(&self, identifier: &str, source: &str, line: int, column: int) -> DList<SectionType> {
@@ -192,5 +192,85 @@ impl<'a> Parser<'a> {
                 fail!("Unable to find start `\\{` and end `\\}` for code block beginning at {}:{}", line, column);
             }
         }
+    }
+
+    fn read_expression(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+        enum State {
+            Identifier,
+            LookingForBlock,
+            LookingForPeriod,
+            LookingForSecondIdentifier
+        }
+
+        let mut sections: DList<SectionType> = DList::new();
+
+        let mut current_state = Identifier;
+        let mut end_of_expression: uint = 0;
+
+        while end_of_expression < source.len() {
+            let source = source.slice_from(end_of_expression);
+            let lexer = CodeLexer::new(source, line, column);
+            dump!(current_state, end_of_expression, source);
+
+            match current_state {
+                Identifier => {
+                    let identifier = lexer.accept_identifier(source);
+
+                    if identifier.len() == 0 {
+                        break;
+                    }
+
+                    dump!(identifier.as_slice());
+                    end_of_expression += identifier.len();
+                    current_state = LookingForBlock;
+                },
+                LookingForBlock => {
+                    let start_char = source.char_at(0);
+
+                    match start_char {
+                        '[' |
+                        '(' => {
+                            let end_char = if start_char == '[' { ']' } else { ')' };
+
+                            let end_index = lexer.end_of_block(start_char, end_char);
+
+                            match end_index {
+                                Some(index) => {
+                                    end_of_expression += index;
+                                },
+                                None => {
+                                    break;
+                                }
+                            }
+                        },
+                        _ => {
+                            current_state = LookingForPeriod;
+                        }
+                    }
+                }
+                LookingForPeriod => {
+                    let start_char = source.char_at(0);
+
+                    if start_char == '.' {
+                        current_state = LookingForSecondIdentifier;
+                        end_of_expression += 1;
+                    } else {
+                        break;
+                    }
+                },
+                LookingForSecondIdentifier => {
+                    let identifier = lexer.accept_identifier(source);
+
+                    if identifier.len() > 0 {
+                        current_state = Identifier;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        sections.push_back(Print(source.slice_to(end_of_expression).to_strbuf()));
+        sections
     }
 }

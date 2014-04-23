@@ -30,7 +30,9 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
                         _ => ()
                     };
                 },
-                _ => {}
+                _ => {
+                    dump!(section);
+                }
             }
         }
         try!(writeln!(&mut file, "{}", postlude()));

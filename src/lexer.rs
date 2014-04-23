@@ -43,7 +43,7 @@ impl<'a> CodeLexer<'a> {
         }).collect::<StrBuf>()
     }
 
-    fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
+    pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
         let mut scope = 0;
         let mut in_quote: Option<char> = None;
         for (index, c) in self.source.chars().enumerate() {
