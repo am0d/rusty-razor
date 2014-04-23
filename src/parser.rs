@@ -127,10 +127,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&self, source: &str, line: int, column: int) -> DList<SectionType> {
-        let sections: DList<SectionType> = DList::new();
+        let mut sections: DList<SectionType> = DList::new();
         let lexer = CodeLexer::new(source, line, column);
 
-        self.read_expression(source.slice_from(1), line, column)
+        match self.read_expression(source.slice_from(1), line, column) {
+            None => sections.append(self.parse_html(source, line, column)),
+            Some(expression) => {
+                let len = expression.len();
+                sections.push_back(Print(expression));
+                sections.append(self.parse_html(source.slice_from(len + 1), line, column));
+            }
+        }
+        
+        sections
     }
 
     fn parse_keyword(&self, identifier: &str, source: &str, line: int, column: int) -> DList<SectionType> {
@@ -194,15 +203,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn read_expression(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+    fn read_expression(&self, source: &str, line: int, column: int) -> Option<StrBuf> {
         enum State {
             Identifier,
             LookingForBlock,
             LookingForPeriod,
             LookingForSecondIdentifier
         }
-
-        let mut sections: DList<SectionType> = DList::new();
 
         let mut current_state = Identifier;
         let mut end_of_expression: uint = 0;
@@ -270,7 +277,9 @@ impl<'a> Parser<'a> {
             }
         }
 
-        sections.push_back(Print(source.slice_to(end_of_expression).to_strbuf()));
-        sections
+        match end_of_expression {
+            0 => None,
+            _ => Some(source.slice_to(end_of_expression).to_strbuf())
+        }
     }
 }

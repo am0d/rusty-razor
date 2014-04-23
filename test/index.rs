@@ -81,6 +81,9 @@ impl<'a> Action for TodoIndexView<'a> {
         for t in todos.iter() {
         out.write_string(r###"
             <li><a href="todos/"###);
+        out.write_string(r###"/edit">"###);
+        out.write_string(r###"</a></li>
+            "###);
         }
         out.write_string(r###"
         </ul>
