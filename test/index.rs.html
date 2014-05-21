@@ -1,7 +1,4 @@
-@model Vec<Todo>;
-@{
-use super::super::models::Todo;
-}
+@model Vec<(int, StrBuf)>;
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -61,8 +58,8 @@ use super::super::models::Todo;
         </p>
 
         <ul>
-            @for t in todos.iter() {
-            <li><a href="todos/@t.id/edit">@t.description</a></li>
+            @for &(id, ref description) in model.iter() {
+            <li><a href="todos/@id/edit">@description</a></li>
             }
         </ul>
       </div>

@@ -15,7 +15,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
                         if !in_render {
                             try!(writeln!(&mut file, "{}", prelude(&model)));
                         }
-                        try!(writeln!(&mut file, "        out.write_string(r\\#\\#\\#\"{}\"\\#\\#\\#);", *s));
+                        try!(writeln!(&mut file, "        try!(out.write_str(r\\#\\#\\#\"{}\"\\#\\#\\#));", *s));
                         in_render = true;
                     }
                 },
@@ -29,6 +29,9 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
                         },
                         _ => ()
                     };
+                },
+                &parser::Print(ref value) => {
+                    try!(writeln!(&mut file, "        try!(write!(out, \"\\{\\}\", {}));", *value));
                 },
                 _ => {
                     dump!(section);
@@ -45,9 +48,10 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     }
 }
 
-fn prelude (model: &StrBuf) -> ~str {
-    format!("
-use super::super::\\{View, SafeHtmlString\\};
+fn prelude (model: &StrBuf) -> StrBuf {
+    StrBuf::from_owned_str(format!("
+use std::io::IoResult;
+use Action;
 pub struct TodoIndexView<'a> \\{
     model: {0}
 \\}
@@ -61,11 +65,13 @@ impl<'a> TodoIndexView<'a> \\{
 \\}
 
 impl<'a> Action for TodoIndexView<'a> \\{
-    fn render(&self, out: &mut Writer) \\{", model.as_slice())
+    fn render(&self, out: &mut Writer) -> IoResult<()> \\{
+        let ref model = self.model;", model.as_slice()))
 }
 
-fn postlude() -> ~str {
-    ~"    }
-}"
+fn postlude() -> StrBuf {
+    StrBuf::from_str("    Ok(())
+    }
+}")
 }
 

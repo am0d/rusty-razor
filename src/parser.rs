@@ -150,6 +150,9 @@ impl<'a> Parser<'a> {
             "model" => {
                 self.parse_model(source.slice_from(identifier.len()), line, column)
             },
+            "use" => {
+                self.parse_use(source.slice_from(identifier.len()), line, column)
+            },
             "for" |
             "while" => {
                 self.parse_simple_block(source, line, column)
@@ -178,6 +181,24 @@ impl<'a> Parser<'a> {
             }
         };
     }
+
+    fn parse_use(&self, source: &str, line: int, column: int) -> DList<SectionType> {
+        let mut sections: DList<SectionType> = DList::new();
+        let lexer = CodeLexer::new(source, line, column);
+
+        match lexer.end_of_code_statement() {
+            Some(index) => {
+                sections.push_back(Directive(StrBuf::from_str("use"), source.slice_to(index+1).to_strbuf()));
+                // now skip the `;`
+                sections.append(self.parse_html(source.slice_from(index + 2), 1, 1));
+                return sections
+            },
+            None => {
+                fail!("Unable to find end of `use` directive at {}:{}", line, column)
+            }
+        };
+    }
+
 
     fn parse_simple_block(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         let mut sections: DList<SectionType> = DList::new();

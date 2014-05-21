@@ -1,14 +1,12 @@
-        
-use super::super::models::Todo;
 
-
-use super::super::{View, SafeHtmlString};
+use std::io::IoResult;
+use Action;
 pub struct TodoIndexView<'a> {
-    model:  Vec<Todo>
+    model:  Vec<(int, StrBuf)>
 }
 
 impl<'a> TodoIndexView<'a> {
-    pub fn new(m:  Vec<Todo>) -> TodoIndexView<'a> {
+    pub fn new(m:  Vec<(int, StrBuf)>) -> TodoIndexView<'a> {
         TodoIndexView {
             model: m//.clone()
         }
@@ -16,8 +14,9 @@ impl<'a> TodoIndexView<'a> {
 }
 
 impl<'a> Action for TodoIndexView<'a> {
-    fn render(&self, out: &mut Writer) {
-        out.write_string(r###"
+    fn render(&self, out: &mut Writer) -> IoResult<()> {
+        let ref model = self.model;
+        try!(out.write_str(r###"
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -77,15 +76,17 @@ impl<'a> Action for TodoIndexView<'a> {
         </p>
 
         <ul>
-            "###);
-        for t in todos.iter() {
-        out.write_string(r###"
-            <li><a href="todos/"###);
-        out.write_string(r###"/edit">"###);
-        out.write_string(r###"</a></li>
-            "###);
+            "###));
+        for &(id, ref description) in model.iter() {
+        try!(out.write_str(r###"
+            <li><a href="todos/"###));
+        try!(write!(out, "{}", id));
+        try!(out.write_str(r###"/edit">"###));
+        try!(write!(out, "{}", description));
+        try!(out.write_str(r###"</a></li>
+            "###));
         }
-        out.write_string(r###"
+        try!(out.write_str(r###"
         </ul>
       </div>
 
@@ -99,6 +100,7 @@ impl<'a> Action for TodoIndexView<'a> {
     <script src="/assets/js/bootstrap.min.js"></script>
   </body>
 </html>
-"###);
+"###));
+    Ok(())
     }
 }
