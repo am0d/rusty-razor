@@ -6,11 +6,11 @@ use lexer::{HtmlLexer, CodeLexer};
 
 #[deriving(Show)]
 pub enum SectionType {
-    Html(StrBuf),
-    Code(StrBuf),
-    Directive(StrBuf, StrBuf),
-    Print(StrBuf),
-    Comment(StrBuf)
+    Html(String),
+    Code(String),
+    Directive(String, String),
+    Print(String),
+    Comment(String)
 }
 
 pub struct Parser<'a> {
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         match lexer.next_transition() {
             Some(index) => {
                 if index > 0 {
-                    sections.push_back(Html(source.slice_to(index).to_strbuf()));
+                    sections.push_back(Html(String::from_str(source.slice_to(index))));
                 }
 
                 if index < source.len() {
@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
                 }
             },
             None => {
-                sections.push_back(Html(source.to_strbuf()));
+                sections.push_back(Html(String::from_str(source)));
             }
         };
 
@@ -86,7 +86,7 @@ impl<'a> Parser<'a> {
             None => fail!("Unterminated code block"),
             Some(index) => {
                 // skip the @{ by starting the slice at 2
-                sections.push_back(Code(source.slice_chars(2, index).to_strbuf()));
+                sections.push_back(Code(String::from_str(source.slice_chars(2, index))));
                 
                 if index < source.len() {
                     sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
         match lexer.end_of_code_statement() {
             Some(index) => {
                 // don't include the `;`
-                sections.push_back(Directive(StrBuf::from_str("model"), source.slice_to(index).to_strbuf()));
+                sections.push_back(Directive(String::from_str("model"), String::from_str(source.slice_to(index))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
                 return sections
@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
 
         match lexer.end_of_code_statement() {
             Some(index) => {
-                sections.push_back(Directive(StrBuf::from_str("use"), source.slice_to(index+1).to_strbuf()));
+                sections.push_back(Directive(String::from_str("use"), String::from_str(source.slice_to(index+1))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 2), 1, 1));
                 return sections
@@ -206,9 +206,9 @@ impl<'a> Parser<'a> {
 
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
-                sections.push_back(Code(source.slice_to(start + 1).to_strbuf()));
+                sections.push_back(Code(String::from_str(source.slice_to(start + 1))));
                 sections.append(self.parse_html(source.slice_chars(start+1, end), 1, 1));
-                sections.push_back(Code("}".to_strbuf()));
+                sections.push_back(Code(String::from_str("}")));
                 sections.append(self.parse_html(source.slice_from(end+1), 1, 1));
                 sections
             },
@@ -224,7 +224,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn read_expression(&self, source: &str, line: int, column: int) -> Option<StrBuf> {
+    fn read_expression(&self, source: &str, line: int, column: int) -> Option<String> {
         enum State {
             Identifier,
             LookingForBlock,
@@ -300,7 +300,7 @@ impl<'a> Parser<'a> {
 
         match end_of_expression {
             0 => None,
-            _ => Some(source.slice_to(end_of_expression).to_strbuf())
+            _ => Some(String::from_str(source.slice_to(end_of_expression)))
         }
     }
 }

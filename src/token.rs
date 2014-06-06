@@ -1,6 +1,6 @@
-#[deriving(Clone,Show,Eq)]
+#[deriving(Clone,Show,PartialEq)]
 pub enum Token {
-    String(StrBuf),
+    String(String),
     Whitespace(char),
     Operator(char),
     AtSymbol

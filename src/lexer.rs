@@ -27,7 +27,7 @@ impl<'a> CodeLexer<'a> {
         }
     }
 
-    pub fn accept_identifier(&self, source: &str) -> StrBuf {
+    pub fn accept_identifier(&self, source: &str) -> String {
         let mut first = true;
         source.chars().take_while(|c| {
             match *c {
@@ -40,7 +40,7 @@ impl<'a> CodeLexer<'a> {
                 '0' .. '9' if !first => true,
                 _ => false
             }
-        }).collect::<StrBuf>()
+        }).collect::<String>()
     }
 
     pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {

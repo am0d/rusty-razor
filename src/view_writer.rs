@@ -6,7 +6,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
-        let mut model = StrBuf::new();
+        let mut model = String::new();
 
         for section in sections.iter() {
             match section {
@@ -48,8 +48,8 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     }
 }
 
-fn prelude (model: &StrBuf) -> StrBuf {
-    StrBuf::from_owned_str(format!("
+fn prelude (model: &String) -> String {
+    String::from_str(format!("
 use std::io::IoResult;
 use Action;
 pub struct TodoIndexView<'a> \\{
@@ -66,11 +66,11 @@ impl<'a> TodoIndexView<'a> \\{
 
 impl<'a> Action for TodoIndexView<'a> \\{
     fn render(&self, out: &mut Writer) -> IoResult<()> \\{
-        let ref model = self.model;", model.as_slice()))
+        let ref model = self.model;", model.as_slice()).as_slice())
 }
 
-fn postlude() -> StrBuf {
-    StrBuf::from_str("    Ok(())
+fn postlude() -> String {
+    String::from_str("    Ok(())
     }
 }")
 }

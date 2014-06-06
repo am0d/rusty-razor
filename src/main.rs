@@ -1,5 +1,8 @@
 #![feature(phase)]
 #[phase(syntax)]
+extern crate my_debug;
+
+#[phase(syntax, link)]
 extern crate debug;
 
 extern crate collections;
@@ -12,7 +15,7 @@ mod parser;
 mod token;
 mod view_writer;
 
-fn get_file_contents() -> Result<~str, io::IoError> {
+fn get_file_contents() -> Result<String, io::IoError> {
     let path = from_str::<Path>("test/index.rs.html").unwrap();
 
     File::open(&path).and_then(|file| {

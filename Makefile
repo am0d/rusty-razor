@@ -9,7 +9,7 @@ BINARIES := build/compiler
 ALL_OBJS := $(ALL_SOURCES:src/%.rs=build/%.o)
 ALL_TESTS := $(ALL_SOURCES:src/%.rs=build/%)
 
-DEBUG_LIB := $(shell rustc src/debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib --crate-file-name)
+DEBUG_LIB := $(shell rustc src/my_debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib --crate-file-name)
 
 all: compiler
 
@@ -20,10 +20,10 @@ build/compiler: $(DEBUG_LIB) $(COMPILER_SOURCES)
 	@mkdir -p build/
 	@rustc src/main.rs $(LINK_FLAGS) -o $@
 
-$(DEBUG_LIB): src/debug.rs
+$(DEBUG_LIB): src/my_debug.rs
 	@echo Compiling $@
 	@mkdir -p build/
-	@rustc src/debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib
+	@rustc src/my_debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib
 
 run: $(BINARIES)
 	./build/compiler
