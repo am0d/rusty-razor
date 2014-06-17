@@ -1,4 +1,4 @@
-@model Vec<(int, String)>;
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -52,15 +52,17 @@
         <p class="lead">Use this document as a way to quickly start any new project.
             <br> All you get is this text and a mostly barebones HTML document.
         </p>
-        <span>What happens when I put @@LastName here?</span>
+        <span>What happens when I put @LastName here?</span>
         <p>
             My contact: test@example.com
         </p>
 
         <ul>
-            @for &(id, ref description) in model.iter() {
-            <li><a href="todos/@id/edit">@description</a></li>
-            }
+            
+            <li><a href="todos/0/edit">First</a></li>
+            
+            <li><a href="todos/1/edit">Second item</a></li>
+            
         </ul>
       </div>
 

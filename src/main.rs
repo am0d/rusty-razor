@@ -1,9 +1,7 @@
 #![feature(phase)]
-#[phase(syntax)]
-extern crate my_debug;
+#[phase(plugin)] extern crate my_debug;
 
-#[phase(syntax, link)]
-extern crate debug;
+#[phase(plugin, link)] extern crate debug;
 
 extern crate collections;
 

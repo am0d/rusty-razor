@@ -1,12 +1,12 @@
 
 use std::io::IoResult;
-use Action;
+use super::Action;
 pub struct TodoIndexView<'a> {
-    model:  Vec<(int, StrBuf)>
+    model:  Vec<(int, String)>
 }
 
 impl<'a> TodoIndexView<'a> {
-    pub fn new(m:  Vec<(int, StrBuf)>) -> TodoIndexView<'a> {
+    pub fn new(m:  Vec<(int, String)>) -> TodoIndexView<'a> {
         TodoIndexView {
             model: m//.clone()
         }
@@ -70,7 +70,9 @@ impl<'a> Action for TodoIndexView<'a> {
         <p class="lead">Use this document as a way to quickly start any new project.
             <br> All you get is this text and a mostly barebones HTML document.
         </p>
-        <span>What happens when I put @@LastName here?</span>
+        <span>What happens when I put "###));
+        try!(out.write_str(r###"@"###));
+        try!(out.write_str(r###"LastName here?</span>
         <p>
             My contact: test@example.com
         </p>

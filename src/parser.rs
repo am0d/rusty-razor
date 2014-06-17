@@ -1,4 +1,4 @@
-use collections::deque::Deque;
+use std::collections::Deque;
 use collections::dlist::DList;
 
 use lexer::{HtmlLexer, CodeLexer};
@@ -56,7 +56,7 @@ impl<'a> Parser<'a> {
 
 
     fn parse_code(&self, source: &'a str, line: int, column: int) -> DList<SectionType> {
-        let sections: DList<SectionType> = DList::new();
+        let mut sections: DList<SectionType> = DList::new();
         //let mut lexer = CodeLexer::new(source, line, column);
 
         if source.len() < 2 {
@@ -72,6 +72,11 @@ impl<'a> Parser<'a> {
         let next = source.char_at(1);
         match next {
             '{' => self.parse_code_block(source, line, column),
+            '@' => {
+                sections.push_back(Html("@".to_string()));
+                sections.append(self.parse_html(source.slice_from(2), line, column));
+                sections
+            },
             _ => {
                 self.parse_expression_block(source, line, column)
             }
@@ -128,7 +133,7 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&self, source: &str, line: int, column: int) -> DList<SectionType> {
         let mut sections: DList<SectionType> = DList::new();
-        let lexer = CodeLexer::new(source, line, column);
+        //let lexer = CodeLexer::new(source, line, column);
 
         match self.read_expression(source.slice_from(1), line, column) {
             None => sections.append(self.parse_html(source, line, column)),
@@ -213,13 +218,13 @@ impl<'a> Parser<'a> {
                 sections
             },
             (Some(_), None) => {
-                fail!("Missing end `\\}` for code block beginning at {}:{}", line, column);
+                fail!("Missing end `}}` for code block beginning at {}:{}", line, column);
             },
             (None, Some(_)) => {
-                fail!("Missing start `\\{` for code block beginning at {}:{}", line, column);
+                fail!("Missing start `{{` for code block beginning at {}:{}", line, column);
             },
             (None, None) => {
-                fail!("Unable to find start `\\{` and end `\\}` for code block beginning at {}:{}", line, column);
+                fail!("Unable to find start `{{` and end `}}` for code block beginning at {}:{}", line, column);
             }
         }
     }
@@ -238,7 +243,7 @@ impl<'a> Parser<'a> {
         while end_of_expression < source.len() {
             let source = source.slice_from(end_of_expression);
             let lexer = CodeLexer::new(source, line, column);
-            dump!(current_state, end_of_expression, source);
+            //dump!(current_state, end_of_expression, source);
 
             match current_state {
                 Identifier => {
@@ -248,7 +253,7 @@ impl<'a> Parser<'a> {
                         break;
                     }
 
-                    dump!(identifier.as_slice());
+                    //dump!(identifier.as_slice());
                     end_of_expression += identifier.len();
                     current_state = LookingForBlock;
                 },

@@ -131,10 +131,10 @@ impl<'a> HtmlLexer<'a> {
                 return false;
         }
 
-        if self.source.char_at(index - 1) == '@' ||
-            self.source.char_at(index + 1) == '@' {
-                return false;
-        }
+        //if self.source.char_at(index - 1) == '@' ||
+        //    self.source.char_at(index + 1) == '@' {
+        //        return false;
+        //}
 
         true
     }

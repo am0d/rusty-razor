@@ -9,7 +9,7 @@ BINARIES := build/compiler
 ALL_OBJS := $(ALL_SOURCES:src/%.rs=build/%.o)
 ALL_TESTS := $(ALL_SOURCES:src/%.rs=build/%)
 
-DEBUG_LIB := $(shell rustc src/my_debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib --crate-file-name)
+DEBUG_LIB := build/$(shell rustc src/my_debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib --crate-file-name)
 
 all: compiler
 
@@ -30,10 +30,12 @@ run: $(BINARIES)
 
 check: build/test
 	@./$<
+	diff test/index.expected.html test/index.actual.html
 
-build/test: src/test.rs $(WEB_SOURCES)
+build/test: $(BINARIES) test/test.rs $(WEB_SOURCES)
+	./build/compiler
 	@echo Compiling $@ in test mode
-	@rustc $< $(LINK_FLAGS) $(RUST_FLAGS) --test --out-dir build/
+	@rustc test/test.rs $(LINK_FLAGS) $(RUST_FLAGS) --test --out-dir build/
 
 clean:
 	@echo "Cleaning ..."
