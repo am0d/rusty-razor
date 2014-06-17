@@ -59,7 +59,7 @@ pub struct TodoIndexView<'a> {{
 impl<'a> TodoIndexView<'a> {{
     pub fn new(m: {0}) -> TodoIndexView<'a> {{
         TodoIndexView {{
-            model: m//.clone()
+            model: m
         }}
     }}
 }}

@@ -8,7 +8,7 @@ pub struct TodoIndexView<'a> {
 impl<'a> TodoIndexView<'a> {
     pub fn new(m:  Vec<(int, String)>) -> TodoIndexView<'a> {
         TodoIndexView {
-            model: m//.clone()
+            model: m
         }
     }
 }

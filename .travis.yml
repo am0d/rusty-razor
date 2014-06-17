@@ -7,7 +7,7 @@ install:
   - (cd rust-nightly-x86_64-unknown-linux-gnu/ && sudo ./install.sh)
 script:
     - rustc --version
-    - make
+    - make check
 notifications:
     email:
         - damien.schoof+github@gmail.com

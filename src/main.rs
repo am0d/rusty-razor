@@ -31,9 +31,9 @@ fn main() {
     let mut parser = parser::Parser::new(contents.as_slice());
     parser.parse();
 
-    for section in parser.sections.iter() {
-        println!("{}", section);
-    }
+    //for section in parser.sections.iter() {
+    //    println!("{}", section);
+    //}
 
     view_writer::write_view(&Path::new("test/index.rs"), &parser.sections);
 }
