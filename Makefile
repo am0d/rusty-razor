@@ -26,14 +26,14 @@ $(DEBUG_LIB): src/my_debug.rs
 	@rustc src/my_debug.rs $(LINK_FLAGS) --out-dir=build --crate-type rlib
 
 run: $(BINARIES)
-	./build/compiler
+	./build/compiler test/index.rs.html
 
 check: build/test
 	@./$<
 	diff test/index.expected.html test/index.actual.html
 
 build/test: $(BINARIES) test/test.rs $(WEB_SOURCES)
-	./build/compiler
+	./build/compiler test/index.rs.html
 	@echo Compiling $@ in test mode
 	@rustc test/test.rs $(LINK_FLAGS) $(RUST_FLAGS) --test --out-dir build/
 
