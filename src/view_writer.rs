@@ -2,7 +2,7 @@ use std::io::File;
 use collections::dlist::DList;
 use parser;
 
-pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
+pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
@@ -13,7 +13,7 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
                 &parser::Html(ref s) => {
                     if in_render || s.as_slice().trim().len() > 0 {
                         if !in_render {
-                            try!(writeln!(&mut file, "{}", prelude(&model)));
+                            try!(writeln!(&mut file, "{}", prelude(view_name, &model)));
                         }
                         try!(writeln!(&mut file, "        try!(out.write_str(r###\"{}\"###));", *s));
                         in_render = true;
@@ -48,25 +48,25 @@ pub fn write_view(out_path: &Path, sections: &DList<parser::SectionType>) {
     }
 }
 
-fn prelude (model: &String) -> String {
+fn prelude (view_name: &str, model: &String) -> String {
     String::from_str(format!("
 use std::io::IoResult;
 use super::Action;
-pub struct TodoIndexView<'a> {{
-    model: {0}
+pub struct {0}<'a> {{
+    model: {1}
 }}
 
-impl<'a> TodoIndexView<'a> {{
-    pub fn new(m: {0}) -> TodoIndexView<'a> {{
-        TodoIndexView {{
+impl<'a> {0}<'a> {{
+    pub fn new(m: {1}) -> {0}<'a> {{
+        {0} {{
             model: m
         }}
     }}
 }}
 
-impl<'a> Action for TodoIndexView<'a> {{
+impl<'a> Action for {0}<'a> {{
     fn render(&self, out: &mut Writer) -> IoResult<()> {{
-        let ref model = self.model;", model.as_slice()).as_slice())
+        let ref model = self.model;", view_name, model.as_slice()).as_slice())
 }
 
 fn postlude() -> String {

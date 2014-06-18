@@ -1,19 +1,19 @@
 
 use std::io::IoResult;
 use super::Action;
-pub struct TodoIndexView<'a> {
+pub struct Index<'a> {
     model:  Vec<(int, String)>
 }
 
-impl<'a> TodoIndexView<'a> {
-    pub fn new(m:  Vec<(int, String)>) -> TodoIndexView<'a> {
-        TodoIndexView {
+impl<'a> Index<'a> {
+    pub fn new(m:  Vec<(int, String)>) -> Index<'a> {
+        Index {
             model: m
         }
     }
 }
 
-impl<'a> Action for TodoIndexView<'a> {
+impl<'a> Action for Index<'a> {
     fn render(&self, out: &mut Writer) -> IoResult<()> {
         let ref model = self.model;
         try!(out.write_str(r###"

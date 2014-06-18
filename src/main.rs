@@ -31,7 +31,49 @@ fn output_file_from_input(input_file_path: &str) -> Path {
     if input_file_path.ends_with(".rs.html") {
         from_str::<Path>(input_file_path.slice_to(input_file_path.len() - 5)).unwrap()
     } else {
-        input_path.with_extension(".rs")
+        input_path.with_extension("rs")
+    }
+}
+
+fn view_name(input_file_path: &str) -> String {
+    let path = match from_str::<Path>(input_file_path) {
+        Some(path) => {
+            path
+        },
+        None => {
+            return "View".to_string();
+        }
+    };
+    match path.filestem_str() {
+        Some(fs) => {
+            let name = if fs.ends_with(".rs") {
+                fs.slice_to(fs.len() - 3)
+            } else {
+                fs
+            };
+
+            let mut view_name = String::with_capacity(name.len());
+            let mut capitilize = true;
+
+            for c in name.chars() {
+                match c {
+                    '.' | '_' | '-' => capitilize = true,
+                    _ => {
+                        view_name.push_char(if capitilize {
+                                                c.to_uppercase()
+                                            } else {
+                                                c
+                                            });
+                        capitilize = false
+                    }
+                }
+            }
+
+            view_name
+        },
+        None => {
+            "View".to_string()
+        }
     }
 }
 
@@ -74,5 +116,5 @@ fn main() {
     //    println!("{}", section);
     //}
 
-    view_writer::write_view(&output_file_name, &parser.sections);
+    view_writer::write_view(view_name(input_file_name).as_slice(), &output_file_name, &parser.sections);
 }
