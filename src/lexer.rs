@@ -44,7 +44,7 @@ impl<'a> CodeLexer<'a> {
     }
 
     pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
-        let mut scope = 0;
+        let mut scope = 0i;
         let mut in_quote: Option<char> = None;
         for (index, c) in self.source.chars().enumerate() {
             if c == '\'' || c == '"' {
