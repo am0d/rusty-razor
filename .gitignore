@@ -1,5 +1,4 @@
-.cargo
 .*
 !.gitignore
-build
+target
 test/*.actual.html

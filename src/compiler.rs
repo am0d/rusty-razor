@@ -1,5 +1,5 @@
 #![feature(phase)]
-#[phase(plugin)] extern crate my_debug;
+#[phase(plugin)] extern crate rust_debug = "rust-debug";
 
 #[phase(plugin, link)] extern crate debug;
 

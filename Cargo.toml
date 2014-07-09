@@ -1,0 +1,11 @@
+[package]
+name = "rust-razor"
+version = "0.1.0-pre"
+authors = [ "Damien Schoof" ]
+
+[[bin]]
+name = "compiler"
+
+[dependencies.rust-debug]
+git = "https://github.com/am0d/rust-debug.git"
+
