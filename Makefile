@@ -14,6 +14,7 @@ check: target/test
 target/test: compiler test/test.rs 
 	./target/compiler test/index.rs.html
 	@echo Compiling $@ in test mode
+	@mkdir -p target/test
 	@rustc test/test.rs $(LINK_FLAGS) $(RUST_FLAGS) --test --out-dir target/test/
 
 clean:
