@@ -1,7 +1,7 @@
 all: compiler
 
 compiler: 
-	cargo build
+	cargo build -v
 
 run: compiler 
 	./target/compiler test/index.rs.html
