@@ -21,7 +21,7 @@ fn get_file_contents(file_path: &str) -> Result<String, io::IoError> {
 
     File::open(&path).and_then(|file| {
         let mut file = file;
-        file.read_to_str()
+        file.read_to_string()
     })
 }
 
@@ -106,7 +106,7 @@ fn main() {
 
     let contents = match get_file_contents(input_file_name) {
         Ok(contents) => contents,
-        Err(e) => fail!(e.to_str())
+        Err(e) => fail!(e.to_string())
     };
 
     let mut parser = parser::Parser::new(contents.as_slice());
