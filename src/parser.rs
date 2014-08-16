@@ -1,4 +1,4 @@
-use std::collections::Deque;
+//use std::collections::Deque;
 use collections::dlist::DList;
 
 use lexer::{HtmlLexer, CodeLexer};
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         match lexer.next_transition() {
             Some(index) => {
                 if index > 0 {
-                    sections.push_back(Html(String::from_str(source.slice_to(index))));
+                    sections.push(Html(String::from_str(source.slice_to(index))));
                 }
 
                 if index < source.len() {
@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
                 }
             },
             None => {
-                sections.push_back(Html(String::from_str(source)));
+                sections.push(Html(String::from_str(source)));
             }
         };
 
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
         match next {
             '{' => self.parse_code_block(source, line, column),
             '@' => {
-                sections.push_back(Html("@".to_string()));
+                sections.push(Html("@".to_string()));
                 sections.append(self.parse_html(source.slice_from(2), line, column));
                 sections
             },
@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
             None => fail!("Unterminated code block"),
             Some(index) => {
                 // skip the @{ by starting the slice at 2
-                sections.push_back(Code(String::from_str(source.slice_chars(2, index))));
+                sections.push(Code(String::from_str(source.slice_chars(2, index))));
                 
                 if index < source.len() {
                     sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
@@ -139,7 +139,7 @@ impl<'a> Parser<'a> {
             None => sections.append(self.parse_html(source, line, column)),
             Some(expression) => {
                 let len = expression.len();
-                sections.push_back(Print(expression));
+                sections.push(Print(expression));
                 sections.append(self.parse_html(source.slice_from(len + 1), line, column));
             }
         }
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
         match lexer.end_of_code_statement() {
             Some(index) => {
                 // don't include the `;`
-                sections.push_back(Directive(String::from_str("model"), String::from_str(source.slice_to(index))));
+                sections.push(Directive(String::from_str("model"), String::from_str(source.slice_to(index))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
                 return sections
@@ -193,7 +193,7 @@ impl<'a> Parser<'a> {
 
         match lexer.end_of_code_statement() {
             Some(index) => {
-                sections.push_back(Directive(String::from_str("use"), String::from_str(source.slice_to(index+1))));
+                sections.push(Directive(String::from_str("use"), String::from_str(source.slice_to(index+1))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 2), 1, 1));
                 return sections
@@ -211,9 +211,9 @@ impl<'a> Parser<'a> {
 
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
-                sections.push_back(Code(String::from_str(source.slice_to(start + 1))));
+                sections.push(Code(String::from_str(source.slice_to(start + 1))));
                 sections.append(self.parse_html(source.slice_chars(start+1, end), 1, 1));
-                sections.push_back(Code(String::from_str("}")));
+                sections.push(Code(String::from_str("}")));
                 sections.append(self.parse_html(source.slice_from(end+1), 1, 1));
                 sections
             },

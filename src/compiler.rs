@@ -94,11 +94,11 @@ fn main() {
     };
 
     if matches.free.is_empty() {
-        print_usage(args.get(0).as_slice(), opts);
+        print_usage(args[0].as_slice(), opts);
         return;
     }
 
-    let input_file_name = matches.free.get(0).as_slice();
+    let input_file_name = matches.free[0].as_slice();
     let output_file_name = match matches.opt_str("o") {
         Some(ofn) => from_str::<Path>(ofn.as_slice()).unwrap(),
         None => output_file_from_input(input_file_name)
