@@ -1,17 +1,11 @@
 env:
     global:
         - LD_LIBRARY_PATH: /usr/local/lib
-script:
-  - cargo build
-  - make all
-before_install:
-  - yes | sudo add-apt-repository ppa:cmrx64/cargo
-  - sudo apt-get update
-  - sudo apt-get install cargo
 install:
-  - wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz -O - | sudo tar zxf - --strip-components 1 -C /usr/local
+  - curl https://static.rust-lang.org/rustup.sh | sudo sh
 script:
   - rustc --version
+  - cargo --version
   - make
   - make check
 notifications:
