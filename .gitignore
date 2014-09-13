@@ -2,3 +2,4 @@
 !.gitignore
 target
 test/*.actual.html
+Cargo.lock
