@@ -59,7 +59,7 @@ fn view_name(input_file_path: &str) -> String {
                 match c {
                     '.' | '_' | '-' => capitilize = true,
                     _ => {
-                        view_name.push_char(if capitilize {
+                        view_name.push(if capitilize {
                                                 c.to_uppercase()
                                             } else {
                                                 c

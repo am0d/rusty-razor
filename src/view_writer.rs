@@ -33,9 +33,9 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::Sec
                 &parser::Print(ref value) => {
                     try!(writeln!(&mut file, "        try!(write!(out, \"{{}}\", {}));", *value));
                 },
-                _ => {
+                /*_ => {
                     dump!(section);
-                }
+                }*/
             }
         }
         try!(writeln!(&mut file, "{}", postlude()));

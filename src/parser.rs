@@ -10,7 +10,7 @@ pub enum SectionType {
     Code(String),
     Directive(String, String),
     Print(String),
-    Comment(String)
+//    Comment(String)
 }
 
 pub struct Parser<'a> {
