@@ -28,19 +28,17 @@ impl<'a> CodeLexer<'a> {
     }
 
     pub fn accept_identifier(&self, source: &str) -> String {
-        let mut first = true;
-        source.chars().take_while(|c| {
-            match *c {
-                'A' .. 'Z' |
-                'a' .. 'z' |
+        source.chars().enumerate().take_while(|&(index, c)| {
+            match c {
+                'A' ... 'Z' |
+                'a' ... 'z' |
                 '_' => {
-                    first = false;
                     true
                 },
-                '0' .. '9' if !first => true,
+                '0' ... '9' if index > 0 => true,
                 _ => false
             }
-        }).collect::<String>()
+        }).map(|(_, c)| c).collect::<String>()
     }
 
     pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
@@ -110,9 +108,9 @@ impl<'a> HtmlLexer<'a> {
 
     fn is_valid_email_char(&self, c: char) -> bool {
         match c {
-            'A' .. 'Z' |
-            'a' .. 'z' |
-            '0' .. '9' => true,
+            'A' ... 'Z' |
+            'a' ... 'z' |
+            '0' ... '9' => true,
             _ => false
         }
     }
