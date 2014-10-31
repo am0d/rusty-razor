@@ -1,8 +1,6 @@
 #![feature(phase)]
 #[phase(plugin)] extern crate "rust-debug" as rust_debug;
 
-#[phase(plugin, link)] extern crate debug;
-
 extern crate collections;
 extern crate getopts;
 
@@ -90,7 +88,7 @@ fn main() {
                                 .collect();
     let matches = match getopts(args.tail(), opts) {
         Ok(m) => m,
-        Err(e) => fail!("Unable to get options: {}", e)
+        Err(e) => panic!("Unable to get options: {}", e)
     };
 
     if matches.free.is_empty() {
@@ -106,7 +104,7 @@ fn main() {
 
     let contents = match get_file_contents(input_file_name) {
         Ok(contents) => contents,
-        Err(e) => fail!(e.to_string())
+        Err(e) => panic!(e.to_string())
     };
 
     let mut parser = parser::Parser::new(contents.as_slice());

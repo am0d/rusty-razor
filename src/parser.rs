@@ -88,7 +88,7 @@ impl<'a> Parser<'a> {
         let lexer = CodeLexer::new(source, line, column);
 
         match lexer.end_of_code_block() {
-            None => fail!("Unterminated code block"),
+            None => panic!("Unterminated code block"),
             Some(index) => {
                 // skip the @{ by starting the slice at 2
                 sections.push(Code(String::from_str(source.slice_chars(2, index))));
@@ -182,7 +182,7 @@ impl<'a> Parser<'a> {
                 return sections
             },
             None => {
-                fail!("Unable to find end of `model` directive at {}:{}", line, column)
+                panic!("Unable to find end of `model` directive at {}:{}", line, column)
             }
         };
     }
@@ -199,7 +199,7 @@ impl<'a> Parser<'a> {
                 return sections
             },
             None => {
-                fail!("Unable to find end of `use` directive at {}:{}", line, column)
+                panic!("Unable to find end of `use` directive at {}:{}", line, column)
             }
         };
     }
@@ -218,13 +218,13 @@ impl<'a> Parser<'a> {
                 sections
             },
             (Some(_), None) => {
-                fail!("Missing end `}}` for code block beginning at {}:{}", line, column);
+                panic!("Missing end `}}` for code block beginning at {}:{}", line, column);
             },
             (None, Some(_)) => {
-                fail!("Missing start `{{` for code block beginning at {}:{}", line, column);
+                panic!("Missing start `{{` for code block beginning at {}:{}", line, column);
             },
             (None, None) => {
-                fail!("Unable to find start `{{` and end `}}` for code block beginning at {}:{}", line, column);
+                panic!("Unable to find start `{{` and end `}}` for code block beginning at {}:{}", line, column);
             }
         }
     }
