@@ -1,8 +1,8 @@
 use std::io::File;
 use collections::dlist::DList;
-use parser;
+use parser::SectionType;
 
-pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::SectionType>) {
+pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
@@ -10,7 +10,7 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::Sec
 
         for section in sections.iter() {
             match section {
-                &parser::Html(ref s) => {
+                &SectionType::Html(ref s) => {
                     if in_render || s.as_slice().trim().len() > 0 {
                         if !in_render {
                             try!(writeln!(&mut file, "{}", prelude(view_name, &model)));
@@ -19,10 +19,10 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::Sec
                         in_render = true;
                     }
                 },
-                &parser::Code(ref s) => {
+                &SectionType::Code(ref s) => {
                     try!(writeln!(&mut file, "        {}", *s));
                 },
-                &parser::Directive(ref directive_name, ref directive_value) => {
+                &SectionType::Directive(ref directive_name, ref directive_value) => {
                     match directive_name.as_slice() {
                         "model" => {
                             model = directive_value.clone();
@@ -30,7 +30,7 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<parser::Sec
                         _ => ()
                     };
                 },
-                &parser::Print(ref value) => {
+                &SectionType::Print(ref value) => {
                     try!(writeln!(&mut file, "        try!(write!(out, \"{{}}\", {}));", *value));
                 },
                 /*_ => {

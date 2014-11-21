@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         match lexer.next_transition() {
             Some(index) => {
                 if index > 0 {
-                    sections.push(Html(String::from_str(source.slice_to(index))));
+                    sections.push_back(SectionType::Html(String::from_str(source.slice_to(index))));
                 }
 
                 if index < source.len() {
@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
                 }
             },
             None => {
-                sections.push(Html(String::from_str(source)));
+                sections.push_back(SectionType::Html(String::from_str(source)));
             }
         };
 
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
         match next {
             '{' => self.parse_code_block(source, line, column),
             '@' => {
-                sections.push(Html("@".to_string()));
+                sections.push_back(SectionType::Html("@".to_string()));
                 sections.append(self.parse_html(source.slice_from(2), line, column));
                 sections
             },
@@ -91,7 +91,7 @@ impl<'a> Parser<'a> {
             None => panic!("Unterminated code block"),
             Some(index) => {
                 // skip the @{ by starting the slice at 2
-                sections.push(Code(String::from_str(source.slice_chars(2, index))));
+                sections.push_back(SectionType::Code(String::from_str(source.slice_chars(2, index))));
                 
                 if index < source.len() {
                     sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
@@ -139,7 +139,7 @@ impl<'a> Parser<'a> {
             None => sections.append(self.parse_html(source, line, column)),
             Some(expression) => {
                 let len = expression.len();
-                sections.push(Print(expression));
+                sections.push_back(SectionType::Print(expression));
                 sections.append(self.parse_html(source.slice_from(len + 1), line, column));
             }
         }
@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
         match lexer.end_of_code_statement() {
             Some(index) => {
                 // don't include the `;`
-                sections.push(Directive(String::from_str("model"), String::from_str(source.slice_to(index))));
+                sections.push_back(SectionType::Directive(String::from_str("model"), String::from_str(source.slice_to(index))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 1), 1, 1));
                 return sections
@@ -193,7 +193,7 @@ impl<'a> Parser<'a> {
 
         match lexer.end_of_code_statement() {
             Some(index) => {
-                sections.push(Directive(String::from_str("use"), String::from_str(source.slice_to(index+1))));
+                sections.push_back(SectionType::Directive(String::from_str("use"), String::from_str(source.slice_to(index+1))));
                 // now skip the `;`
                 sections.append(self.parse_html(source.slice_from(index + 2), 1, 1));
                 return sections
@@ -211,9 +211,9 @@ impl<'a> Parser<'a> {
 
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
-                sections.push(Code(String::from_str(source.slice_to(start + 1))));
+                sections.push_back(SectionType::Code(String::from_str(source.slice_to(start + 1))));
                 sections.append(self.parse_html(source.slice_chars(start+1, end), 1, 1));
-                sections.push(Code(String::from_str("}")));
+                sections.push_back(SectionType::Code(String::from_str("}")));
                 sections.append(self.parse_html(source.slice_from(end+1), 1, 1));
                 sections
             },
@@ -237,7 +237,7 @@ impl<'a> Parser<'a> {
             LookingForSecondIdentifier
         }
 
-        let mut current_state = Identifier;
+        let mut current_state = State::Identifier;
         let mut end_of_expression: uint = 0;
 
         while end_of_expression < source.len() {
@@ -246,7 +246,7 @@ impl<'a> Parser<'a> {
             //dump!(current_state, end_of_expression, source);
 
             match current_state {
-                Identifier => {
+                State::Identifier => {
                     let identifier = lexer.accept_identifier(source);
 
                     if identifier.len() == 0 {
@@ -255,9 +255,9 @@ impl<'a> Parser<'a> {
 
                     //dump!(identifier.as_slice());
                     end_of_expression += identifier.len();
-                    current_state = LookingForBlock;
+                    current_state = State::LookingForBlock;
                 },
-                LookingForBlock => {
+                State::LookingForBlock => {
                     let start_char = source.char_at(0);
 
                     match start_char {
@@ -277,25 +277,25 @@ impl<'a> Parser<'a> {
                             }
                         },
                         _ => {
-                            current_state = LookingForPeriod;
+                            current_state = State::LookingForPeriod;
                         }
                     }
                 }
-                LookingForPeriod => {
+                State::LookingForPeriod => {
                     let start_char = source.char_at(0);
 
                     if start_char == '.' {
-                        current_state = LookingForSecondIdentifier;
+                        current_state = State::LookingForSecondIdentifier;
                         end_of_expression += 1;
                     } else {
                         break;
                     }
                 },
-                LookingForSecondIdentifier => {
+                State::LookingForSecondIdentifier => {
                     let identifier = lexer.accept_identifier(source);
 
                     if identifier.len() > 0 {
-                        current_state = Identifier;
+                        current_state = State::Identifier;
                     } else {
                         break;
                     }

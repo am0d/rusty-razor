@@ -86,13 +86,13 @@ fn main() {
     let args: Vec<String> = os::args().iter()
                                 .map(|a| a.to_string())
                                 .collect();
-    let matches = match getopts(args.tail(), opts) {
+    let matches = match getopts(args.tail(), &opts) {
         Ok(m) => m,
         Err(e) => panic!("Unable to get options: {}", e)
     };
 
     if matches.free.is_empty() {
-        print_usage(args[0].as_slice(), opts);
+        print_usage(args[0].as_slice(), &opts);
         return;
     }
 
