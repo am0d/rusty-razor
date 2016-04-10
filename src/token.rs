@@ -1,6 +1,6 @@
 use std;
 
-#[deriving(Clone,Show,PartialEq)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Token {
     String(std::string::String),
     Whitespace(char),

@@ -1,8 +1,10 @@
-use std::io::File;
-use collections::dlist::DList;
+use std::fs::File;
+use std::path::Path;
+use std::io::Write;
+use std::collections::LinkedList;
 use parser::SectionType;
 
-pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<SectionType>) {
+pub fn write_view(view_name: &str, out_path: &Path, sections: &LinkedList<SectionType>) {
     let result = File::create(out_path).and_then(|file| {
         let mut file = file;
         let mut in_render = false;
@@ -11,7 +13,7 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<SectionType
         for section in sections.iter() {
             match section {
                 &SectionType::Html(ref s) => {
-                    if in_render || s.as_slice().trim().len() > 0 {
+                    if in_render || s[..].trim().len() > 0 {
                         if !in_render {
                             try!(writeln!(&mut file, "{}", prelude(view_name, &model)));
                         }
@@ -23,7 +25,7 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<SectionType
                     try!(writeln!(&mut file, "        {}", *s));
                 },
                 &SectionType::Directive(ref directive_name, ref directive_value) => {
-                    match directive_name.as_slice() {
+                    match &directive_name[..] {
                         "model" => {
                             model = directive_value.clone();
                         },
@@ -49,7 +51,7 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &DList<SectionType
 }
 
 fn prelude (view_name: &str, model: &String) -> String {
-    String::from_str(format!("
+    format!("
 use std::io::IoResult;
 use super::Action;
 pub struct {0}<'a> {{
@@ -66,11 +68,11 @@ impl<'a> {0}<'a> {{
 
 impl<'a> Action for {0}<'a> {{
     fn render(&self, out: &mut Writer) -> IoResult<()> {{
-        let ref model = self.model;", view_name, model.as_slice()).as_slice())
+        let ref model = self.model;", view_name, &model[..])
 }
 
 fn postlude() -> String {
-    String::from_str("    Ok(())
+    String::from("    Ok(())
     }
 }")
 }

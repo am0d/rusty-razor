@@ -2,14 +2,22 @@
 
 //use token::{Token, String, Whitespace, Operator, AtSymbol};
 
+pub fn first_char(source: &str) -> char {
+    source.char_indices().next().unwrap().1
+}
+
+pub fn nth_char(source: &str, index: usize) -> char {
+    source.char_indices().nth(index).unwrap().1
+}
+
 pub struct CodeLexer<'a> {
-    pub line: int,
-    pub column: int,
+    pub line: i32,
+    pub column: i32,
     pub source: &'a str,
 }
 
 impl<'a> CodeLexer<'a> {
-    pub fn new(source: &'a str, line: int, column: int) -> CodeLexer<'a> {
+    pub fn new(source: &'a str, line: i32, column: i32) -> CodeLexer<'a> {
         CodeLexer {
             line: line,
             column: column,
@@ -41,8 +49,8 @@ impl<'a> CodeLexer<'a> {
         }).map(|(_, c)| c).collect::<String>()
     }
 
-    pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<uint> {
-        let mut scope = 0i;
+    pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<usize> {
+        let mut scope = 0i32;
         let mut in_quote: Option<char> = None;
         for (index, c) in self.source.chars().enumerate() {
             if c == '\'' || c == '"' {
@@ -72,33 +80,33 @@ impl<'a> CodeLexer<'a> {
         None
     }
 
-    pub fn next_instance_of(&self, search_char: char) -> Option<uint> {
+    pub fn next_instance_of(&self, search_char: char) -> Option<usize> {
         self.source.chars().position(|c| {
             c == search_char
         })
     }
 
-    pub fn end_of_code_block(&self) -> Option<uint> {
+    pub fn end_of_code_block(&self) -> Option<usize> {
         self.end_of_block('{', '}')
     }
 
-    pub fn end_of_code_statement(&self) -> Option<uint> {
+    pub fn end_of_code_statement(&self) -> Option<usize> {
         self.next_instance_of(';')
     }
 
-    pub fn block_delimiters(&self) -> (Option<uint>, Option<uint>) {
+    pub fn block_delimiters(&self) -> (Option<usize>, Option<usize>) {
         (self.next_instance_of('{'), self.end_of_block('{', '}'))
     }
 }
 
 pub struct HtmlLexer<'a> {
-    pub line: int,
-    pub column: int,
+    pub line: i32,
+    pub column: i32,
     pub source: &'a str,
 }
 
 impl<'a> HtmlLexer<'a> {
-    pub fn new(source: &'a str, line: int, column: int) -> HtmlLexer<'a> {
+    pub fn new(source: &'a str, line: i32, column: i32) -> HtmlLexer<'a> {
         HtmlLexer {
             line: line,
             column: column,
@@ -115,7 +123,7 @@ impl<'a> HtmlLexer<'a> {
         }
     }
 
-    fn is_valid_transition(&self, index: uint) -> bool {
+    fn is_valid_transition(&self, index: usize) -> bool {
         if index == 0 {
             return true;
         }
@@ -124,8 +132,8 @@ impl<'a> HtmlLexer<'a> {
             return false;
         }
 
-        if self.is_valid_email_char(self.source.char_at(index - 1)) &&
-            self.is_valid_email_char(self.source.char_at(index + 1)) {
+        if self.is_valid_email_char(nth_char(self.source, index - 1)) &&
+            self.is_valid_email_char(nth_char(self.source, index + 1)) {
                 return false;
         }
 
@@ -137,7 +145,7 @@ impl<'a> HtmlLexer<'a> {
         true
     }
 
-    pub fn next_transition(&mut self) -> Option<uint> {
+    pub fn next_transition(&mut self) -> Option<usize> {
         for (index, c) in self.source.chars().enumerate() {
             if c == '@' && self.is_valid_transition(index) {
                 return Some(index)

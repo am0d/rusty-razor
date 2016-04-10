@@ -1,54 +1,48 @@
-#![feature(phase)]
-#[phase(plugin)] extern crate "rust-debug" as rust_debug;
-
-extern crate collections;
 extern crate getopts;
 
-use std::io;
-use getopts::{optopt,getopts, OptGroup, short_usage, usage};
-use std::os;
-use std::io::File;
+use std::io::Read;
+use getopts::{Options};
+use std::env::args;
+use std::fs::File;
+use std::path::{Path,PathBuf};
 
 mod lexer;
 mod parser;
 mod token;
 mod view_writer;
 
-fn get_file_contents(file_path: &str) -> Result<String, io::IoError> {
-    let path = from_str::<Path>(file_path).unwrap();
+fn get_file_contents(file_path: &str) -> Result<String, std::io::Error> {
+    let path = Path::new(file_path);
 
-    File::open(&path).and_then(|file| {
+    File::open(path).and_then(|file| {
         let mut file = file;
-        file.read_to_string()
+        let mut s = String::new();
+        try!(file.read_to_string(&mut s));
+        Ok(s)
     })
 }
 
-fn output_file_from_input(input_file_path: &str) -> Path {
-    let input_path = from_str::<Path>(input_file_path).unwrap();
+fn output_file_from_input(input_file_path: &str) -> PathBuf {
+    let input_path = PathBuf::from(input_file_path);
 
     if input_file_path.ends_with(".rs.html") {
-        from_str::<Path>(input_file_path.slice_to(input_file_path.len() - 5)).unwrap()
+        PathBuf::from(&input_file_path[..input_file_path.len() - 5])
     } else {
         input_path.with_extension("rs")
     }
 }
 
 fn view_name(input_file_path: &str) -> String {
-    let path = match from_str::<Path>(input_file_path) {
-        Some(path) => {
-            path
-        },
-        None => {
-            return "View".to_string();
-        }
-    };
-    match path.filestem_str() {
+    let path = PathBuf::from(input_file_path);
+    match path.file_stem() {
         Some(fs) => {
-            let name = if fs.ends_with(".rs") {
-                fs.slice_to(fs.len() - 3)
-            } else {
-                fs
-            };
+            let fs = fs.to_string_lossy().into_owned();
+            let name = 
+                if fs.ends_with(".rs") {
+                    &fs[..fs.len() - 3]
+                } else {
+                    &fs[..]
+                };
 
             let mut view_name = String::with_capacity(name.len());
             let mut capitilize = true;
@@ -57,11 +51,13 @@ fn view_name(input_file_path: &str) -> String {
                 match c {
                     '.' | '_' | '-' => capitilize = true,
                     _ => {
-                        view_name.push(if capitilize {
-                                                c.to_uppercase()
-                                            } else {
-                                                c
-                                            });
+                        if capitilize {
+                            for capital in c.to_uppercase() {
+                                view_name.push(capital);
+                            }
+                        } else {
+                            view_name.push(c);
+                        }
                         capitilize = false
                     }
                 }
@@ -75,30 +71,29 @@ fn view_name(input_file_path: &str) -> String {
     }
 }
 
-fn print_usage(program_name: &str, options: &[OptGroup]) {
-    println!("{}", usage(short_usage(program_name, options).as_slice(), options));
+fn print_usage(program_name: &str, options: Options) {
+    println!("{}", options.usage(&options.short_usage(program_name)[..]));
 }
 
 fn main() {
-    let opts = [
-        optopt("o", "out", "Filename of the generated rust code", "")
-    ];
-    let args: Vec<String> = os::args().iter()
+    let mut opts = Options::new();
+    opts.optopt("o", "out", "Filename of the generated rust code", "");
+    let args: Vec<String> = args()
                                 .map(|a| a.to_string())
                                 .collect();
-    let matches = match getopts(args.tail(), &opts) {
+    let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => panic!("Unable to get options: {}", e)
     };
 
     if matches.free.is_empty() {
-        print_usage(args[0].as_slice(), &opts);
+        print_usage(&args[0][..], opts);
         return;
     }
 
-    let input_file_name = matches.free[0].as_slice();
+    let input_file_name = &matches.free[0][..];
     let output_file_name = match matches.opt_str("o") {
-        Some(ofn) => from_str::<Path>(ofn.as_slice()).unwrap(),
+        Some(ofn) => PathBuf::from(ofn),
         None => output_file_from_input(input_file_name)
     };
 
@@ -107,12 +102,12 @@ fn main() {
         Err(e) => panic!(e.to_string())
     };
 
-    let mut parser = parser::Parser::new(contents.as_slice());
+    let mut parser = parser::Parser::new(&contents[..]);
     parser.parse();
 
     //for section in parser.sections.iter() {
     //    println!("{}", section);
     //}
 
-    view_writer::write_view(view_name(input_file_name).as_slice(), &output_file_name, &parser.sections);
+    view_writer::write_view(&view_name(input_file_name)[..], output_file_name.as_path(), &parser.sections);
 }

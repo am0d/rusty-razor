@@ -3,5 +3,5 @@ name = "razor"
 version = "0.1.0-pre"
 authors = [ "Damien Schoof" ]
 
-[dependencies.rust-debug]
-git = "https://github.com/am0d/rust-debug.git"
+[dependencies]
+getopts = "*"
