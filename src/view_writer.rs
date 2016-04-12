@@ -51,24 +51,22 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &LinkedList<Sectio
 }
 
 fn prelude (view_name: &str, model: &String) -> String {
-    format!("
-use std::io::IoResult;
-use super::Action;
-pub struct {0}<'a> {{
+    format!("use std::fmt;
+
+pub struct {0} {{
     model: {1}
 }}
 
-impl<'a> {0}<'a> {{
-    pub fn new(m: {1}) -> {0}<'a> {{
+impl {0} {{
+    pub fn new(m: {1}) -> {0} {{
         {0} {{
             model: m
         }}
     }}
 }}
 
-impl<'a> Action for {0}<'a> {{
-    fn render(&self, out: &mut Writer) -> IoResult<()> {{
-        let ref model = self.model;", view_name, &model[..])
+impl fmt::Display for {0} {{
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {{", view_name, &model[..])
 }
 
 fn postlude() -> String {

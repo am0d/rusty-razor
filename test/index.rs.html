@@ -1,4 +1,4 @@
-@model Vec<(int, String)>;
+@model Vec<(usize, String)>;
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -58,7 +58,7 @@
         </p>
 
         <ul>
-            @for &(id, ref description) in model.iter() {
+            @for &(id, ref description) in self.model.iter() {
             <li><a href="todos/@id/edit">@description</a></li>
             }
         </ul>

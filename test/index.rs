@@ -1,21 +1,19 @@
+use std::fmt;
 
-use std::io::IoResult;
-use super::Action;
-pub struct Index<'a> {
-    model:  Vec<(int, String)>
+pub struct Index {
+    model:  Vec<(usize, String)>
 }
 
-impl<'a> Index<'a> {
-    pub fn new(m:  Vec<(int, String)>) -> Index<'a> {
+impl Index {
+    pub fn new(m:  Vec<(usize, String)>) -> Index {
         Index {
             model: m
         }
     }
 }
 
-impl<'a> Action for Index<'a> {
-    fn render(&self, out: &mut Writer) -> IoResult<()> {
-        let ref model = self.model;
+impl fmt::Display for Index {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         try!(out.write_str(r###"
 <!DOCTYPE html>
 <html lang="en">
@@ -79,7 +77,7 @@ impl<'a> Action for Index<'a> {
 
         <ul>
             "###));
-        for &(id, ref description) in model.iter() {
+        for &(id, ref description) in self.model.iter() {
         try!(out.write_str(r###"
             <li><a href="todos/"###));
         try!(write!(out, "{}", id));
