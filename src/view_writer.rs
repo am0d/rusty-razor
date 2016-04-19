@@ -17,27 +17,31 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &LinkedList<Sectio
                         if !in_render {
                             try!(writeln!(&mut file, "{}", prelude(view_name, &model)));
                         }
-                        try!(writeln!(&mut file, "        try!(out.write_str(r###\"{}\"###));", *s));
+                        try!(writeln!(&mut file,
+                                      "        try!(out.write_str(r###\"{}\"###));",
+                                      *s));
                         in_render = true;
                     }
-                },
+                }
                 &SectionType::Code(ref s) => {
                     try!(writeln!(&mut file, "        {}", *s));
-                },
+                }
                 &SectionType::Directive(ref directive_name, ref directive_value) => {
                     match &directive_name[..] {
                         "model" => {
                             model = directive_value.clone();
-                        },
-                        _ => ()
+                        }
+                        _ => (),
                     };
-                },
+                }
                 &SectionType::Print(ref value) => {
-                    try!(writeln!(&mut file, "        try!(write!(out, \"{{}}\", {}));", *value));
-                },
-                /*_ => {
-                    dump!(section);
-                }*/
+                    try!(writeln!(&mut file,
+                                  "        try!(write!(out, \"{{}}\", {}));",
+                                  *value));
+                }
+                // _ => {
+                // dump!(section);
+                // }
             }
         }
         try!(writeln!(&mut file, "{}", postlude()));
@@ -46,11 +50,11 @@ pub fn write_view(view_name: &str, out_path: &Path, sections: &LinkedList<Sectio
 
     match result {
         Err(e) => println!("Error writing to file: {}", e),
-        _ => ()
+        _ => (),
     }
 }
 
-fn prelude (view_name: &str, model: &String) -> String {
+fn prelude(view_name: &str, model: &String) -> String {
     format!("use std::fmt;
 
 pub struct {0} {{
@@ -66,7 +70,9 @@ impl {0} {{
 }}
 
 impl fmt::Display for {0} {{
-    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {{", view_name, &model[..])
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {{",
+            view_name,
+            &model[..])
 }
 
 fn postlude() -> String {
@@ -74,4 +80,3 @@ fn postlude() -> String {
     }
 }")
 }
-

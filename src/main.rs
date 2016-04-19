@@ -1,10 +1,10 @@
 extern crate getopts;
 
 use std::io::Read;
-use getopts::{Options};
+use getopts::Options;
 use std::env::args;
 use std::fs::File;
-use std::path::{Path,PathBuf};
+use std::path::{Path, PathBuf};
 
 mod lexer;
 mod parser;
@@ -37,12 +37,11 @@ fn view_name(input_file_path: &str) -> String {
     match path.file_stem() {
         Some(fs) => {
             let fs = fs.to_string_lossy().into_owned();
-            let name = 
-                if fs.ends_with(".rs") {
-                    &fs[..fs.len() - 3]
-                } else {
-                    &fs[..]
-                };
+            let name = if fs.ends_with(".rs") {
+                &fs[..fs.len() - 3]
+            } else {
+                &fs[..]
+            };
 
             let mut view_name = String::with_capacity(name.len());
             let mut capitilize = true;
@@ -64,10 +63,8 @@ fn view_name(input_file_path: &str) -> String {
             }
 
             view_name
-        },
-        None => {
-            "View".to_string()
         }
+        None => "View".to_string(),
     }
 }
 
@@ -83,7 +80,7 @@ fn main() {
                                 .collect();
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(e) => panic!("Unable to get options: {}", e)
+        Err(e) => panic!("Unable to get options: {}", e),
     };
 
     if matches.free.is_empty() {
@@ -94,20 +91,22 @@ fn main() {
     let input_file_name = &matches.free[0][..];
     let output_file_name = match matches.opt_str("o") {
         Some(ofn) => PathBuf::from(ofn),
-        None => output_file_from_input(input_file_name)
+        None => output_file_from_input(input_file_name),
     };
 
     let contents = match get_file_contents(input_file_name) {
         Ok(contents) => contents,
-        Err(e) => panic!(e.to_string())
+        Err(e) => panic!(e.to_string()),
     };
 
     let mut parser = parser::Parser::new(&contents[..]);
     parser.parse();
 
-    //for section in parser.sections.iter() {
+    // for section in parser.sections.iter() {
     //    println!("{}", section);
-    //}
+    // }
 
-    view_writer::write_view(&view_name(input_file_name)[..], output_file_name.as_path(), &parser.sections);
+    view_writer::write_view(&view_name(input_file_name)[..],
+                            output_file_name.as_path(),
+                            &parser.sections);
 }
