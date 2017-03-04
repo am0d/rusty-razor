@@ -1,7 +1,8 @@
 [package]
-name = "razor"
+authors = ["Damien Schoof"]
+name = "razor_codegen"
 version = "0.1.0-pre"
-authors = [ "Damien Schoof" ]
 
 [dependencies]
 getopts = "*"
+syn = "0.11.8"

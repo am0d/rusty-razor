@@ -1,17 +1,17 @@
 extern crate getopts;
 
 use std::io::Read;
-use getopts::Options;
-use std::env::args;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+
+pub use parser::Parser;
 
 mod lexer;
 mod parser;
 mod token;
-mod view_writer;
+pub mod view_writer;
 
-fn get_file_contents(file_path: &str) -> Result<String, std::io::Error> {
+pub fn get_file_contents(file_path: &str) -> Result<String, std::io::Error> {
     let path = Path::new(file_path);
 
     File::open(path).and_then(|file| {
@@ -22,7 +22,7 @@ fn get_file_contents(file_path: &str) -> Result<String, std::io::Error> {
     })
 }
 
-fn output_file_from_input(input_file_path: &str) -> PathBuf {
+pub fn output_file_from_input(input_file_path: &str) -> PathBuf {
     let input_path = PathBuf::from(input_file_path);
 
     if input_file_path.ends_with(".rs.html") {
@@ -32,7 +32,7 @@ fn output_file_from_input(input_file_path: &str) -> PathBuf {
     }
 }
 
-fn view_name(input_file_path: &str) -> String {
+pub fn view_name(input_file_path: &str) -> String {
     let path = PathBuf::from(input_file_path);
     match path.file_stem() {
         Some(fs) => {
@@ -68,45 +68,17 @@ fn view_name(input_file_path: &str) -> String {
     }
 }
 
-fn print_usage(program_name: &str, options: Options) {
-    println!("{}", options.usage(&options.short_usage(program_name)[..]));
-}
+// #[proc_macro_derive(RazorView)]
+// pub fn derive_razor_view(input: TokenStream) -> TokenStream {
+//     // Construct a string representation of the type definition
+//     let s = input.to_string();
+    
+//     // Parse the string representation
+//     let ast = syn::parse_macro_input(&s).unwrap();
 
-fn main() {
-    let mut opts = Options::new();
-    opts.optopt("o", "out", "Filename of the generated rust code", "");
-    let args: Vec<String> = args()
-                                .map(|a| a.to_string())
-                                .collect();
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(e) => panic!("Unable to get options: {}", e),
-    };
-
-    if matches.free.is_empty() {
-        print_usage(&args[0][..], opts);
-        return;
-    }
-
-    let input_file_name = &matches.free[0][..];
-    let output_file_name = match matches.opt_str("o") {
-        Some(ofn) => PathBuf::from(ofn),
-        None => output_file_from_input(input_file_name),
-    };
-
-    let contents = match get_file_contents(input_file_name) {
-        Ok(contents) => contents,
-        Err(e) => panic!(e.to_string()),
-    };
-
-    let mut parser = parser::Parser::new(&contents[..]);
-    parser.parse();
-
-    // for section in parser.sections.iter() {
-    //    println!("{}", section);
-    // }
-
-    view_writer::write_view(&view_name(input_file_name)[..],
-                            output_file_name.as_path(),
-                            &parser.sections);
-}
+//     // Build the impl
+//     let gen = impl_hello_world(&ast);
+    
+//     // Return the generated impl
+//     gen.parse().unwrap()
+// }

@@ -108,7 +108,7 @@ impl<'a> HtmlLexer<'a> {
         }
     }
 
-    fn is_valid_email_char(&self, c: char) -> bool {
+    fn is_valid_email_char(c: char) -> bool {
         match c {
             'A'...'Z' | 'a'...'z' | '0'...'9' => true,
             _ => false,
@@ -124,8 +124,8 @@ impl<'a> HtmlLexer<'a> {
             return false;
         }
 
-        if self.is_valid_email_char(nth_char(self.source, index - 1)) &&
-           self.is_valid_email_char(nth_char(self.source, index + 1)) {
+        if HtmlLexer::is_valid_email_char(nth_char(self.source, index - 1)) &&
+           HtmlLexer::is_valid_email_char(nth_char(self.source, index + 1)) {
             return false;
         }
 

@@ -14,7 +14,5 @@ fn test_index() {
 
     let model = vec![(0, "First".to_string()), (1, "Second item".to_string())];
     let view = index::Index::new(model);
-    // assert!(
-    write!(file, "{}", view);
-    // == Ok(()));
+    write!(file, "{}", view).expect("Write failed");
 }
