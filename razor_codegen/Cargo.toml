@@ -1,9 +1,8 @@
-[workspace]
 [package]
 authors = ["Damien Schoof"]
-name = "razor"
+name = "razor_codegen"
 version = "0.1.0-pre"
 description = "Rust implementation of the Razor view engine"
 
 [dependencies]
-razor_codegen = {path = "razor_codegen"}
+getopts = "*"
