@@ -1,7 +1,7 @@
 // use std::collections::Deque;
 use std::collections::LinkedList;
 
-use lexer::{HtmlLexer, CodeLexer, first_char, nth_char};
+use lexer::{first_char, nth_char, CodeLexer, HtmlLexer};
 // use token::{String, Whitespace, Operator, AtSymbol};
 
 #[derive(Debug)]
@@ -13,46 +13,39 @@ pub enum SectionType {
 }
 
 pub struct Parser<'a> {
-    pub sections: LinkedList<SectionType>,
     source: &'a str,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Parser<'a> {
-        Parser {
-            sections: LinkedList::new(),
-            source: source,
-        }
+        Parser { source: source }
     }
 
-    pub fn parse(&mut self) {
-        let sections = self.parse_html(self.source, 1, 1);
-
-        self.sections = sections;
+    pub fn parse(&self) -> LinkedList<SectionType> {
+        let lexer = HtmlLexer::new(self.source, 1, 1);
+        self.parse_html(lexer)
     }
 
-    pub fn parse_html(&self, source: &'a str, line: i32, column: i32) -> LinkedList<SectionType> {
-        let mut sections = LinkedList::new();
-        let mut lexer = HtmlLexer::new(source, line, column);
+    pub fn parse_html(&self, lexer: HtmlLexer) -> LinkedList<SectionType> {
+        let mut pieces = LinkedList::new();
 
         match lexer.next_transition() {
             Some(index) => {
                 if index > 0 {
-                    sections.push_back(SectionType::Html(String::from(&source[..index])));
+                    pieces.push_back(SectionType::Html(String::from(&lexer.source[..index])));
                 }
 
-                if index < source.len() {
-                    sections.append(&mut self.parse_code(&source[index..], 1, 1));
+                if index < lexer.source.len() {
+                    pieces.append(&mut self.parse_code(&lexer.source[index..], 1, 1));
                 }
             }
             None => {
-                sections.push_back(SectionType::Html(String::from(source)));
+                pieces.push_back(SectionType::Html(String::from(lexer.source)));
             }
         };
 
-        sections
+        pieces
     }
-
 
     fn parse_code(&self, source: &'a str, line: i32, column: i32) -> LinkedList<SectionType> {
         let mut sections: LinkedList<SectionType> = LinkedList::new();
@@ -65,7 +58,7 @@ impl<'a> Parser<'a> {
         let first = first_char(source);
         match first {
             '@' => (),
-            _ => return self.parse_html(source, line, column),
+            _ => return self.parse_html(HtmlLexer::new(source, line, column)),
         };
 
         let next = nth_char(source, 1);
@@ -73,7 +66,7 @@ impl<'a> Parser<'a> {
             '{' => self.parse_code_block(source, line, column),
             '@' => {
                 sections.push_back(SectionType::Html("@".to_string()));
-                sections.append(&mut self.parse_html(&source[2..], line, column));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[2..], line, column)));
                 sections
             }
             _ => self.parse_expression_block(source, line, column),
@@ -91,7 +84,11 @@ impl<'a> Parser<'a> {
                 sections.push_back(SectionType::Code(String::from(&source[2..index])));
 
                 if index < source.len() {
-                    sections.append(&mut self.parse_html(&source[index + 1..], 1, 1));
+                    sections.append(&mut self.parse_html(HtmlLexer::new(
+                        &source[index + 1..],
+                        1,
+                        1,
+                    )));
                 }
             }
         };
@@ -99,12 +96,12 @@ impl<'a> Parser<'a> {
         sections
     }
 
-    fn parse_expression_block(&self,
-                              source: &str,
-                              line: i32,
-                              column: i32)
-                              -> LinkedList<SectionType> {
-        // let mut sections: LinkedList<SectionType> = LinkedList::new();
+    fn parse_expression_block(
+        &self,
+        source: &str,
+        line: i32,
+        column: i32,
+    ) -> LinkedList<SectionType> {
         let lexer = CodeLexer::new(source, line, column);
 
         let next_brace = lexer.next_instance_of('{');
@@ -134,34 +131,35 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&self, source: &str, line: i32, column: i32) -> LinkedList<SectionType> {
         let mut sections: LinkedList<SectionType> = LinkedList::new();
-        // let lexer = CodeLexer::new(source, line, column);
 
         match self.read_expression(&source[1..], line, column) {
-            None => sections.append(&mut self.parse_html(source, line, column)),
+            None => sections.append(&mut self.parse_html(HtmlLexer::new(source, line, column))),
             Some(expression) => {
                 let len = expression.len();
                 sections.push_back(SectionType::Print(expression));
-                sections.append(&mut self.parse_html(&source[len + 1..], line, column));
+                sections.append(&mut self.parse_html(HtmlLexer::new(
+                    &source[len + 1..],
+                    line,
+                    column,
+                )));
             }
         }
 
         sections
     }
 
-    fn parse_keyword(&self,
-                     identifier: &str,
-                     source: &str,
-                     line: i32,
-                     column: i32)
-                     -> LinkedList<SectionType> {
-        // let sections: LinkedList<SectionType> = LinkedList::new();
-        // let lexer = CodeLexer::new(source, line, column);
-
+    fn parse_keyword(
+        &self,
+        identifier: &str,
+        source: &str,
+        line: i32,
+        column: i32,
+    ) -> LinkedList<SectionType> {
         match identifier {
             "model" => self.parse_model(&source[identifier.len()..], line, column),
             "use" => self.parse_use(&source[identifier.len()..], line, column),
             "for" | "while" => self.parse_simple_block(source, line, column),
-            _ => self.parse_html(source, line, column),
+            _ => self.parse_html(HtmlLexer::new(source, line, column)),
         }
     }
 
@@ -172,17 +170,18 @@ impl<'a> Parser<'a> {
         match lexer.end_of_code_statement() {
             Some(index) => {
                 // don't include the `;`
-                sections.push_back(SectionType::Directive(String::from("model"),
-                                                          String::from(&source[..index])));
+                sections.push_back(SectionType::Directive(
+                    String::from("model"),
+                    String::from(&source[..index]),
+                ));
                 // now skip the `;`
-                sections.append(&mut self.parse_html(&source[index + 1..], 1, 1));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 1..], 1, 1)));
                 return sections;
             }
-            None => {
-                panic!("Unable to find end of `model` directive at {}:{}",
-                       line,
-                       column)
-            }
+            None => panic!(
+                "Unable to find end of `model` directive at {}:{}",
+                line, column
+            ),
         };
     }
 
@@ -192,20 +191,20 @@ impl<'a> Parser<'a> {
 
         match lexer.end_of_code_statement() {
             Some(index) => {
-                sections.push_back(SectionType::Directive(String::from("use"),
-                                                          String::from(&source[..index + 1])));
+                sections.push_back(SectionType::Directive(
+                    String::from("use"),
+                    String::from(&source[..index + 1]),
+                ));
                 // now skip the `;`
-                sections.append(&mut self.parse_html(&source[index + 2..], 1, 1));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 2..], 1, 1)));
                 return sections;
             }
-            None => {
-                panic!("Unable to find end of `use` directive at {}:{}",
-                       line,
-                       column)
-            }
+            None => panic!(
+                "Unable to find end of `use` directive at {}:{}",
+                line, column
+            ),
         };
     }
-
 
     fn parse_simple_block(&self, source: &str, line: i32, column: i32) -> LinkedList<SectionType> {
         let mut sections: LinkedList<SectionType> = LinkedList::new();
@@ -214,25 +213,32 @@ impl<'a> Parser<'a> {
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
                 sections.push_back(SectionType::Code(String::from(&source[..start + 1])));
-                sections.append(&mut self.parse_html(&source[start + 1..end], 1, 1));
+                sections.append(&mut self.parse_html(HtmlLexer::new(
+                    &source[start + 1..end],
+                    1,
+                    1,
+                )));
                 sections.push_back(SectionType::Code(String::from("}")));
-                sections.append(&mut self.parse_html(&source[end + 1..], 1, 1));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[end + 1..], 1, 1)));
                 sections
             }
             (Some(_), None) => {
-                panic!("Missing end `}}` for code block beginning at {}:{}",
-                       line,
-                       column);
+                panic!(
+                    "Missing end `}}` for code block beginning at {}:{}",
+                    line, column
+                );
             }
             (None, Some(_)) => {
-                panic!("Missing start `{{` for code block beginning at {}:{}",
-                       line,
-                       column);
+                panic!(
+                    "Missing start `{{` for code block beginning at {}:{}",
+                    line, column
+                );
             }
             (None, None) => {
-                panic!("Unable to find start `{{` and end `}}` for code block beginning at {}:{}",
-                       line,
-                       column);
+                panic!(
+                    "Unable to find start `{{` and end `}}` for code block beginning at {}:{}",
+                    line, column
+                );
             }
         }
     }
@@ -270,11 +276,7 @@ impl<'a> Parser<'a> {
 
                     match start_char {
                         '[' | '(' => {
-                            let end_char = if start_char == '[' {
-                                ']'
-                            } else {
-                                ')'
-                            };
+                            let end_char = if start_char == '[' { ']' } else { ')' };
 
                             let end_index = lexer.end_of_block(start_char, end_char);
 

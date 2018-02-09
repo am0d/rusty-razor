@@ -92,7 +92,7 @@ impl<'a> CodeLexer<'a> {
         (self.next_instance_of('{'), self.end_of_block('{', '}'))
     }
 }
-
+#[derive(Copy,Clone,Debug)]
 pub struct HtmlLexer<'a> {
     pub line: i32,
     pub column: i32,
@@ -137,7 +137,7 @@ impl<'a> HtmlLexer<'a> {
         true
     }
 
-    pub fn next_transition(&mut self) -> Option<usize> {
+    pub fn next_transition(&self) -> Option<usize> {
         for (index, c) in self.source.chars().enumerate() {
             if c == '@' && self.is_valid_transition(index) {
                 return Some(index);

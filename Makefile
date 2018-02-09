@@ -1,19 +1,17 @@
-all: compiler
+UTIL_SRC = tests/*.rs.html
+
+UTIL_OBJS = $(patsubst tests/%.rs.html,tests/%.rs,$(UTIL_SRC))
 
 compiler: 
-	cargo build -v
-
-run: compiler 
-	./target/debug/razor test/index.rs.html
+	cargo build
 
 check: target/test
-	./target/test/test
 	diff test/index.expected.html test/index.actual.html
 
+tests/%.rs: tests/%.rs.html
+    $(CXX) $(CXXFLAGS) -o $@ $^
 target/test: compiler test/test.rs 
 	./target/debug/razor test/index.rs.html
-	@echo Compiling $@ in test mode
-	@mkdir -p target/test
 	@rustc test/test.rs $(LINK_FLAGS) $(RUST_FLAGS) --test --out-dir target/test/
 
 clean:
