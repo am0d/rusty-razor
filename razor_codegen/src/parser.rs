@@ -92,12 +92,7 @@ impl<'a> Parser<'a> {
         sections
     }
 
-    fn parse_expression_block(
-        &self,
-        source: &str,
-        line: i32,
-        column: i32,
-    ) -> Vec<SectionType> {
+    fn parse_expression_block(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
         let lexer = CodeLexer::new(source, line, column);
 
         let next_brace = lexer.next_instance_of('{');
@@ -110,16 +105,13 @@ impl<'a> Parser<'a> {
             _ => None,
         };
 
-        match next_transition {
-            Some(_) => {
-                let identifier = lexer.accept_identifier(&source[1..]);
-                let identifier = &identifier[..];
+        if next_transition.is_some() {
+            let identifier = lexer.accept_identifier(&source[1..]);
+            let identifier = &identifier[..];
 
-                if lexer.is_keyword(identifier) {
-                    return self.parse_keyword(identifier, &source[1..], 1, 1);
-                }
+            if lexer.is_keyword(identifier) {
+                return self.parse_keyword(identifier, &source[1..], 1, 1);
             }
-            None => (),
         };
 
         self.parse_expression(source, line, column)
@@ -172,13 +164,13 @@ impl<'a> Parser<'a> {
                 ));
                 // now skip the `;`
                 sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 1..], 1, 1)));
-                return sections;
+                sections
             }
             None => panic!(
                 "Unable to find end of `model` directive at {}:{}",
                 line, column
             ),
-        };
+        }
     }
 
     fn parse_use(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
@@ -193,13 +185,13 @@ impl<'a> Parser<'a> {
                 ));
                 // now skip the `;`
                 sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 2..], 1, 1)));
-                return sections;
+                sections
             }
             None => panic!(
                 "Unable to find end of `use` directive at {}:{}",
                 line, column
             ),
-        };
+        }
     }
 
     fn parse_simple_block(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
@@ -259,7 +251,7 @@ impl<'a> Parser<'a> {
                 State::Identifier => {
                     let identifier = lexer.accept_identifier(source);
 
-                    if identifier.len() == 0 {
+                    if identifier.is_empty() {
                         break;
                     }
 
@@ -303,7 +295,7 @@ impl<'a> Parser<'a> {
                 State::LookingForSecondIdentifier => {
                     let identifier = lexer.accept_identifier(source);
 
-                    if identifier.len() > 0 {
+                    if identifier.is_empty() {
                         current_state = State::Identifier;
                     } else {
                         break;

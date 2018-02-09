@@ -1,9 +1,9 @@
 use std::io::{self, Write};
 use parser::SectionType;
 
-fn get_model(sections: &Vec<SectionType>) -> Option<String> {
+fn get_model(sections: &[SectionType]) -> Option<String> {
     for section in sections {
-        if let &SectionType::Directive(ref directive_name, ref value) = section {
+        if let SectionType::Directive(ref directive_name, ref value) = *section {
             if directive_name == "model" {
                 return Some(value.to_string());
             }
@@ -15,7 +15,7 @@ fn get_model(sections: &Vec<SectionType>) -> Option<String> {
 pub fn write_view<T: io::Write>(
     view_name: &str,
     out: &mut T,
-    sections: &Vec<SectionType>,
+    sections: &[SectionType],
 ) -> io::Result<()> {
     let mut out = out;
     let mut in_render = false;
@@ -23,9 +23,9 @@ pub fn write_view<T: io::Write>(
     let model = model.as_ref().map(String::as_str);
 
     for section in sections.iter() {
-        match section {
-            &SectionType::Html(ref s) => {
-                if in_render || s[..].trim().len() > 0 {
+        match *section {
+            SectionType::Html(ref s) => {
+                if in_render || !s[..].trim().is_empty() {
                     if !in_render {
                         writeln!(&mut out, "{}", prelude(view_name, model))?;
                     }
@@ -33,16 +33,16 @@ pub fn write_view<T: io::Write>(
                     in_render = true;
                 }
             }
-            &SectionType::Code(ref s) => {
+            SectionType::Code(ref s) => {
                 writeln!(&mut out, "        {}", *s)?;
             }
-            &SectionType::Directive(ref directive_name, ref _directive_value) => {
+            SectionType::Directive(ref directive_name, ref _directive_value) => {
                 match &directive_name[..] {
-                    "model" => (), // was moved to the get_model function for now
+                    //"model" => (), // was moved to the get_model function for now
                     _ => (),
                 };
             }
-            &SectionType::Print(ref value) => {
+            SectionType::Print(ref value) => {
                 writeln!(
                     &mut out,
                     "        write!(_out, \"{{}}\", {});",
@@ -98,7 +98,7 @@ impl {} {{
         {0}",
         view_name
     ).unwrap();
-    if let Some(_) = model {
+    if model.is_some() {
         write!(
             prelude,
             " {{

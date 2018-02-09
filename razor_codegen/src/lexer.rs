@@ -57,18 +57,15 @@ impl<'a> CodeLexer<'a> {
                 };
             }
 
-            match in_quote {
-                None => {
-                    if c == start_char {
-                        scope += 1;
-                    } else if c == end_char {
-                        scope -= 1;
-                        if scope <= 0 {
-                            return Some(index);
-                        }
+            if in_quote.is_none() {
+                if c == start_char {
+                    scope += 1;
+                } else if c == end_char {
+                    scope -= 1;
+                    if scope <= 0 {
+                        return Some(index);
                     }
                 }
-                _ => (),
             };
         }
 
