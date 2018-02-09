@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use razor_codegen::*;
 
-fn print_usage(program_name: &str, options: Options) {
+fn print_usage(program_name: &str, options: &Options) {
     println!("{}", options.usage(&options.short_usage(program_name)[..]));
 }
 
@@ -28,7 +28,7 @@ fn main() {
         }
         None => {
             if matches.free.is_empty() {
-                print_usage(&args[0][..], opts);
+                print_usage(&args[0][..], &opts);
                 return;
             }
 
@@ -54,7 +54,7 @@ fn process_directory(directory_path: &PathBuf) {
 }
 
 fn parse_and_write_file(input_file_name: &PathBuf) {
-    let output_file_name = output_file_from_input(&input_file_name);
+    let output_file_name = output_file_from_input(input_file_name);
 
     let contents = match get_file_contents(input_file_name) {
         Ok(contents) => contents,
@@ -67,8 +67,7 @@ fn parse_and_write_file(input_file_name: &PathBuf) {
     let result = File::create(output_file_name.as_path()).and_then(|mut file| {
         view_writer::write_view(&view_name(input_file_name)[..], &mut file, &sections)
     });
-    match result {
-        Err(e) => println!("Error writing to file: {}", e),
-        _ => (),
-    };
+    if let Err(e) = result {
+        println!("Error writing to file: {}", e);
+    }
 }

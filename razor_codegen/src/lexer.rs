@@ -33,17 +33,16 @@ impl<'a> CodeLexer<'a> {
     }
 
     pub fn accept_identifier(&self, source: &str) -> String {
-        source.chars()
-              .enumerate()
-              .take_while(|&(index, c)| {
-                  match c {
-                      'A'...'Z' | 'a'...'z' | '_' => true,
-                      '0'...'9' if index > 0 => true,
-                      _ => false,
-                  }
-              })
-              .map(|(_, c)| c)
-              .collect::<String>()
+        source
+            .chars()
+            .enumerate()
+            .take_while(|&(index, c)| match c {
+                'A'...'Z' | 'a'...'z' | '_' => true,
+                '0'...'9' if index > 0 => true,
+                _ => false,
+            })
+            .map(|(_, c)| c)
+            .collect::<String>()
     }
 
     pub fn end_of_block(&self, start_char: char, end_char: char) -> Option<usize> {
@@ -92,7 +91,7 @@ impl<'a> CodeLexer<'a> {
         (self.next_instance_of('{'), self.end_of_block('{', '}'))
     }
 }
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct HtmlLexer<'a> {
     pub line: i32,
     pub column: i32,
@@ -124,8 +123,9 @@ impl<'a> HtmlLexer<'a> {
             return false;
         }
 
-        if HtmlLexer::is_valid_email_char(nth_char(self.source, index - 1)) &&
-           HtmlLexer::is_valid_email_char(nth_char(self.source, index + 1)) {
+        if HtmlLexer::is_valid_email_char(nth_char(self.source, index - 1))
+            && HtmlLexer::is_valid_email_char(nth_char(self.source, index + 1))
+        {
             return false;
         }
 
