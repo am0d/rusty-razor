@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 
 pub use parser::Parser;
 
-mod lexer;
+mod html_lexer;
+mod code_lexer;
 mod parser;
 mod token;
 pub mod view_writer;

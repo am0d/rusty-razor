@@ -1,4 +1,9 @@
-use lexer::{first_char, nth_char, CodeLexer, HtmlLexer};
+use code_lexer::CodeLexer;
+use html_lexer::{nth_char, HtmlLexer};
+
+pub fn first_char(source: &str) -> char {
+    source.char_indices().next().unwrap().1
+}
 
 #[derive(Debug)]
 pub enum SectionType {
