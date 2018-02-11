@@ -3,3 +3,5 @@
 target
 test/*.actual.html
 Cargo.lock
+**/views/*.rs
+!**/views/mod.rs
