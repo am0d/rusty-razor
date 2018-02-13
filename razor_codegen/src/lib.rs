@@ -6,10 +6,11 @@ use std::path::{Path, PathBuf};
 
 pub use parser::Parser;
 
-mod html_lexer;
-mod code_lexer;
-mod parser;
+pub mod html_lexer;
+pub mod code_lexer;
+pub mod parser;
 mod token;
+pub mod enhanced_chars;
 pub mod view_writer;
 
 pub fn get_file_contents(file_path: &PathBuf) -> Result<String, std::io::Error> {

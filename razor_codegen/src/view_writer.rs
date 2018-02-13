@@ -25,7 +25,7 @@ pub fn write_view<T: io::Write>(
     for section in sections.iter() {
         match *section {
             SectionType::Html(ref s) => {
-                if in_render || !s[..].trim().is_empty() {
+                if in_render || !s.is_empty() {
                     if !in_render {
                         writeln!(&mut out, "{}", prelude(view_name, model))?;
                     }
@@ -45,7 +45,7 @@ pub fn write_view<T: io::Write>(
             SectionType::Print(ref value) => {
                 writeln!(
                     &mut out,
-                    "        write!(_out, \"{{}}\", {});",
+                    "        write!(_out, \"{{}}\", {})?;",
                     *value
                 )?;
             }

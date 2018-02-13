@@ -1,21 +1,15 @@
 pub struct CodeLexer<'a> {
-    pub line: i32,
-    pub column: i32,
     pub source: &'a str,
 }
 
 impl<'a> CodeLexer<'a> {
-    pub fn new(source: &'a str, line: i32, column: i32) -> CodeLexer<'a> {
-        CodeLexer {
-            line: line,
-            column: column,
-            source: source,
-        }
+    pub fn new(source: &'a str) -> CodeLexer<'a> {
+        CodeLexer { source: source }
     }
 
     pub fn is_keyword(&self, identifier: &str) -> bool {
         match identifier {
-            "if" | "for" | "model" | "while" => true,
+            "if" | "for" | "model" | "while" | "match" | "use" => true,
             _ => false,
         }
     }

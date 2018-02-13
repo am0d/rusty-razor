@@ -2,7 +2,7 @@ use code_lexer::CodeLexer;
 use html_lexer::{nth_char, HtmlLexer};
 
 pub fn first_char(source: &str) -> char {
-    source.char_indices().next().unwrap().1
+    source.chars().next().unwrap()
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&self) -> Vec<SectionType> {
-        let lexer = HtmlLexer::new(self.source, 1, 1);
+        let lexer = HtmlLexer::new(self.source);
         self.parse_html(lexer)
     }
 
@@ -31,52 +31,38 @@ impl<'a> Parser<'a> {
         let mut pieces = Vec::new();
 
         match lexer.next_transition() {
-            Some(index) => {
-                if index > 0 {
-                    pieces.push(SectionType::Html(String::from(&lexer.source[..index])));
+            Some((index, html)) => {
+                if !html.is_empty() {
+                    pieces.push(SectionType::Html(String::from(html)));
                 }
 
                 if index < lexer.source.len() {
-                    pieces.append(&mut self.parse_code(&lexer.source[index..], 1, 1));
+                    pieces.append(&mut self.parse_code(&lexer.source[index..]));
                 }
             }
             None => {
-                pieces.push(SectionType::Html(String::from(lexer.source)));
+                pieces.push(SectionType::Html(lexer.source.replace("@@", "@")));
             }
         };
 
         pieces
     }
 
-    fn parse_code(&self, source: &'a str, line: i32, column: i32) -> Vec<SectionType> {
-        let mut sections: Vec<SectionType> = Vec::new();
-        // let mut lexer = CodeLexer::new(source, line, column);
-
-        if source.len() < 2 {
-            return sections;
+    fn parse_code(&self, source: &'a str) -> Vec<SectionType> {
+         if source.len() < 2 {
+            return Vec::new();
         }
-
-        let first = first_char(source);
-        match first {
-            '@' => (),
-            _ => return self.parse_html(HtmlLexer::new(source, line, column)),
-        };
 
         let next = nth_char(source, 1);
         match next {
-            '{' => self.parse_code_block(source, line, column),
-            '@' => {
-                sections.push(SectionType::Html("@".to_string()));
-                sections.append(&mut self.parse_html(HtmlLexer::new(&source[2..], line, column)));
-                sections
-            }
-            _ => self.parse_expression_block(source, line, column),
+            '{' => self.parse_code_block(source),
+            _ => self.parse_expression_block(source),
         }
     }
 
-    fn parse_code_block(&self, source: &'a str, line: i32, column: i32) -> Vec<SectionType> {
+    fn parse_code_block(&self, source: &'a str) -> Vec<SectionType> {
         let mut sections: Vec<SectionType> = Vec::new();
-        let lexer = CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source);
 
         match lexer.end_of_code_block() {
             None => panic!("Unterminated code block"),
@@ -85,11 +71,7 @@ impl<'a> Parser<'a> {
                 sections.push(SectionType::Code(String::from(&source[2..index])));
 
                 if index < source.len() {
-                    sections.append(&mut self.parse_html(HtmlLexer::new(
-                        &source[index + 1..],
-                        1,
-                        1,
-                    )));
+                    sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 1..])));
                 }
             }
         };
@@ -97,68 +79,54 @@ impl<'a> Parser<'a> {
         sections
     }
 
-    fn parse_expression_block(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
-        let lexer = CodeLexer::new(source, line, column);
+    fn parse_expression_block(&self, source: &str) -> Vec<SectionType> {
+        let lexer = CodeLexer::new(source);
 
-        let next_brace = lexer.next_instance_of('{');
-        let next_parenthese = lexer.next_instance_of('(');
+        let first_char = first_char(source);
 
-        let next_transition = match (next_brace, next_parenthese) {
-            (Some(b), Some(p)) => Some(::std::cmp::min(b, p)),
-            (Some(b), _) => Some(b),
-            (_, Some(p)) => Some(p),
-            _ => None,
-        };
+        match first_char {
+            '(' => self.parse_expression(source),
+            '{' => self.parse_simple_block(source),
+            _ => {
+                let identifier = lexer.accept_identifier(&source[1..]);
+                let identifier = &identifier[..];
 
-        if next_transition.is_some() {
-            let identifier = lexer.accept_identifier(&source[1..]);
-            let identifier = &identifier[..];
-
-            if lexer.is_keyword(identifier) {
-                return self.parse_keyword(identifier, &source[1..], 1, 1);
+                if lexer.is_keyword(identifier) {
+                    self.parse_keyword(identifier, &source[1..])
+                } else {
+                    self.parse_expression(source)
+                }
             }
-        };
-
-        self.parse_expression(source, line, column)
+        }
     }
 
-    fn parse_expression(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
+    fn parse_expression(&self, source: &str) -> Vec<SectionType> {
         let mut sections: Vec<SectionType> = Vec::new();
 
-        match self.read_expression(&source[1..], line, column) {
-            None => sections.append(&mut self.parse_html(HtmlLexer::new(source, line, column))),
+        match self.read_expression(&source[1..]) {
+            None => sections.append(&mut self.parse_html(HtmlLexer::new(source))),
             Some(expression) => {
                 let len = expression.len();
                 sections.push(SectionType::Print(expression));
-                sections.append(&mut self.parse_html(HtmlLexer::new(
-                    &source[len + 1..],
-                    line,
-                    column,
-                )));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[len + 1..])));
             }
         }
 
         sections
     }
 
-    fn parse_keyword(
-        &self,
-        identifier: &str,
-        source: &str,
-        line: i32,
-        column: i32,
-    ) -> Vec<SectionType> {
+    fn parse_keyword(&self, identifier: &str, source: &str) -> Vec<SectionType> {
         match identifier {
-            "model" => self.parse_model(&source[identifier.len()..], line, column),
-            "use" => self.parse_use(&source[identifier.len()..], line, column),
-            "for" | "while" => self.parse_simple_block(source, line, column),
-            _ => self.parse_html(HtmlLexer::new(source, line, column)),
+            "model" => self.parse_model(&source[identifier.len()..]),
+            "use" => self.parse_use(&source[identifier.len()..]),
+            "for" | "while" | "if" | "match" => self.parse_simple_block(source),
+            _ => self.parse_html(HtmlLexer::new(source)),
         }
     }
 
-    fn parse_model(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
+    fn parse_model(&self, source: &str) -> Vec<SectionType> {
         let mut sections: Vec<SectionType> = Vec::new();
-        let lexer = CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source);
 
         match lexer.end_of_code_statement() {
             Some(index) => {
@@ -168,19 +136,16 @@ impl<'a> Parser<'a> {
                     String::from(&source[..index]),
                 ));
                 // now skip the `;`
-                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 1..], 1, 1)));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 1..])));
                 sections
             }
-            None => panic!(
-                "Unable to find end of `model` directive at {}:{}",
-                line, column
-            ),
+            None => panic!("Unable to find end of `model` directive"),
         }
     }
 
-    fn parse_use(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
+    fn parse_use(&self, source: &str) -> Vec<SectionType> {
         let mut sections: Vec<SectionType> = Vec::new();
-        let lexer = CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source);
 
         match lexer.end_of_code_statement() {
             Some(index) => {
@@ -189,54 +154,38 @@ impl<'a> Parser<'a> {
                     String::from(&source[..index + 1]),
                 ));
                 // now skip the `;`
-                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 2..], 1, 1)));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[index + 2..])));
                 sections
             }
-            None => panic!(
-                "Unable to find end of `use` directive at {}:{}",
-                line, column
-            ),
+            None => panic!("Unable to find end of `use` directive "),
         }
     }
 
-    fn parse_simple_block(&self, source: &str, line: i32, column: i32) -> Vec<SectionType> {
+    fn parse_simple_block(&self, source: &str) -> Vec<SectionType> {
         let mut sections: Vec<SectionType> = Vec::new();
-        let lexer = CodeLexer::new(source, line, column);
+        let lexer = CodeLexer::new(source);
 
         match lexer.block_delimiters() {
             (Some(start), Some(end)) => {
                 sections.push(SectionType::Code(String::from(&source[..start + 1])));
-                sections.append(&mut self.parse_html(HtmlLexer::new(
-                    &source[start + 1..end],
-                    1,
-                    1,
-                )));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[start + 1..end])));
                 sections.push(SectionType::Code(String::from("}")));
-                sections.append(&mut self.parse_html(HtmlLexer::new(&source[end + 1..], 1, 1)));
+                sections.append(&mut self.parse_html(HtmlLexer::new(&source[end + 1..])));
                 sections
             }
             (Some(_), None) => {
-                panic!(
-                    "Missing end `}}` for code block beginning at {}:{}",
-                    line, column
-                );
+                panic!("Missing end `}}` for code block beginning");
             }
             (None, Some(_)) => {
-                panic!(
-                    "Missing start `{{` for code block beginning at {}:{}",
-                    line, column
-                );
+                panic!("Missing start `{{` for code block beginning");
             }
             (None, None) => {
-                panic!(
-                    "Unable to find start `{{` and end `}}` for code block beginning at {}:{}",
-                    line, column
-                );
+                panic!("Unable to find start `{` and end `}` for code block beginning");
             }
         }
     }
 
-    fn read_expression(&self, source: &str, line: i32, column: i32) -> Option<String> {
+    fn read_expression(&self, source: &str) -> Option<String> {
         enum State {
             Identifier,
             LookingForBlock,
@@ -249,7 +198,7 @@ impl<'a> Parser<'a> {
 
         while end_of_expression < source.len() {
             let source = &source[end_of_expression..];
-            let lexer = CodeLexer::new(source, line, column);
+            let lexer = CodeLexer::new(source);
             // dump!(current_state, end_of_expression, source);
 
             match current_state {
@@ -300,7 +249,7 @@ impl<'a> Parser<'a> {
                 State::LookingForSecondIdentifier => {
                     let identifier = lexer.accept_identifier(source);
 
-                    if identifier.is_empty() {
+                    if !identifier.is_empty() {
                         current_state = State::Identifier;
                     } else {
                         break;
