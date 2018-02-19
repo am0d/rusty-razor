@@ -40,3 +40,13 @@ fn test_code_string() {
 Hello, Razor!"###;
     assert_view_result!(CodeString::new(String::from("Razor!")), expected);
 }
+
+#[test]
+fn test_code_if() {
+    let expected = r###"
+
+
+    true
+"###;
+    assert_view_result!(CodeIf::new(true), expected);
+}
